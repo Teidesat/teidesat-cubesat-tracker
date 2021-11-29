@@ -1,5 +1,6 @@
 .idea/
 *.npy
+data/frames
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
