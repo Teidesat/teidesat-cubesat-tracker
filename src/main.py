@@ -12,8 +12,8 @@ from src.utils import time_it, Distance
 # Variables
 THRESHOLD = 20
 PX_SENSITIVITY = 8
-PATH_FRAME = Path('data/frames/video1/frame2000.jpg')
-PATH_VIDEO = Path('data/videos/video1.mp4')
+PATH_FRAME = Path('../data/frames/video1/frame2000.jpg')
+PATH_VIDEO = Path('../data/videos/video1.mp4')
 
 # Decorator
 find_stars = time_it(find_stars)
@@ -58,7 +58,7 @@ def find_add_candidates(descriptors, descriptor, dic):
 
 def identify_test():
     # Load catalog
-    FILE = Path('./data/catalog/hygdata_v3.csv')
+    FILE = Path('../data/catalog/hygdata_v3.csv')
     cat = StarCatalog(file=FILE, load_catalog=True)
 
     # Process image

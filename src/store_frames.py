@@ -1,11 +1,12 @@
 import cv2
 from pathlib import Path
 
-INPUT = Path('data/videos/video1.mp4')
-OUTPUT = Path('data/frames')
+INPUT = Path('../data/videos/video1.mp4')
+OUTPUT = Path('../data/frames')
 
 
 def store_frames(video_path, output_dir):
+    """ Store frames from a video to process """
     output_subdir = output_dir / INPUT.stem
     output_subdir.mkdir(parents=True, exist_ok=False)
 
