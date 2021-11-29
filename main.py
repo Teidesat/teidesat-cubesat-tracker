@@ -70,18 +70,12 @@ def identify_test():
     stars = [(x, y) for x, y in stars if y < 200 and 800 < x < 1050]  # Dubhe Megrez Alioth
     # Alioth, Megrez, Dubhe
     # Phad, Merak
-    alioth = cat.stars['proper'] == 'Alioth'
-    megrez = cat.stars['proper'] == 'Megrez'
-    dubhe = cat.stars['proper'] == 'Dubhe'
-    phad = cat.stars['proper'] == 'Phad'
-    merak = cat.stars['proper'] == 'Merak'
-    indices = [dubhe, megrez, alioth, phad, merak]
-    names = ['dubhe', 'megrez', 'alioth', 'phad', 'merak']
-    values = [(cat.stars['theta'][i][0], cat.stars['phi'][i][0]) for i in indices]
+
+    stars_real = cat.get_by_names(['Alioth, Megrez, Dubhe', 'Phad', 'Merak'])
 
     # Match stars in the image with the stars in the database
     descs_found = StarDescriptor.build_descriptors(stars, px_radius=200, dist_func=Distance.euclidean)
-    descs_original = StarDescriptor.build_descriptors(values, px_radius=150, dist_func=Distance.between_spherical)
+    descs_original = StarDescriptor.build_descriptors(stars_real, px_radius=150, dist_func=Distance.between_spherical)
 
     candidates = defaultdict(lambda: defaultdict(lambda: 0))
     for desc in descs_found:
@@ -184,6 +178,6 @@ def identify_test():
 
 
 if __name__ == '__main__':
-    # single_frame_test()
+    single_frame_test()
     # video_test()
-    identify_test()
+    # identify_test()

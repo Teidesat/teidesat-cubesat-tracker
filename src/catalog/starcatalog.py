@@ -2,10 +2,12 @@ import urllib.request
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 
 from src.catalog.colorDic import ColorDict
 from src.catalog.projections import SphereProjection
-from src.star import StarDB
+from src.catalog.star import Star
+from src.utils import time_it
 
 
 class StarCatalog:
@@ -13,10 +15,34 @@ class StarCatalog:
 
     def __init__(self, file, telescope=None, load_catalog=False):
         self.file = Path(file)
-        self.stars = None
         self.telescope = telescope
+        self._cols = None
+        self._list = None
         if load_catalog:
             self.load_catalog()
+
+    def __getitem__(self, item):
+        if isinstance(item, int):  # Return a single Star
+            return Star(self._cols, item)
+        if isinstance(item, str):  # Return a single column
+            return self._cols[item]
+        if isinstance(item, list) and len(item) > 0:  # Return a subset of rows by index
+            if isinstance(item[0], int):
+                view = StarCatalog(self.file, self.telescope)
+                view._cols = {col: data[item] for col, data in self._cols.items()}
+                return view
+
+    def __str__(self):
+        return '{} Stars'.format(len(self))
+
+    def __len__(self):
+        key = list(self._cols.keys())[0]
+        return len(self._cols[key])
+
+    def as_list(self):
+        if self._list is None:
+            self._list = [self[i] for i in range(len(self))]
+        return self._list
 
     def load_catalog(self):
         """ Open the csv catalog if catalog is not in local, download it """
@@ -32,11 +58,25 @@ class StarCatalog:
             self.file.write_text(txt)
             print('Done!')
 
-        self.stars = StarDB.from_csv(self.file)
+        df = pd.read_csv(self.file)
+        df['phi'] = df['ra'] * 2 * np.pi / 24
+        df['the'] = (df['dec'] + 90) * np.pi / 180
+        df['descriptors'] = [None] * len(df)
+        self._cols = {col: df[col].to_numpy() for col in df}
         return self
 
-    def __getitem__(self, item):
-        return self.stars[item]
+    def get_by_name(self, name):
+        for i, row in enumerate(self._cols['proper']):
+            if row == name:
+                return self[i]
+        return None
+
+    def get_by_names(self, names):
+        stars = []
+        for i, row in enumerate(self._cols['proper']):
+            if row in names:
+                stars.append(self[i])
+        return stars
 
     # Drawing ----------------------------------------------------------------------------------------------------------
     @staticmethod
@@ -52,10 +92,11 @@ class StarCatalog:
                 vega_ref_size=1., max_radius=3,
                 colorize=False, indices=None):
         colors = ColorDict()
-        phi_arr = self.stars['phi'] if indices is None else self.stars['phi'][indices]
-        the_arr = self.stars['theta'] if indices is None else self.stars['theta'][indices]
-        mag_arr = self.stars['mag'] if indices is None else self.stars['mag'][indices]
-        con_arr = self.stars['con'] if indices is None else self.stars['con'][indices]
+
+        phi_arr = self['phi'] if indices is None else self['phi'][indices]
+        the_arr = self['the'] if indices is None else self['the'][indices]
+        mag_arr = self['mag'] if indices is None else self['mag'][indices]
+        con_arr = self['con'] if indices is None else self['con'][indices]
 
         x_arr, y_arr = projection.from_spherical_int(phi_arr, the_arr)
 

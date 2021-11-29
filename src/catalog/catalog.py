@@ -1,10 +1,7 @@
 from pathlib import Path
 
 import cv2
-import numpy as np
-from tqdm import tqdm
 
-from src.catalog.colorDic import ColorDict
 from src.catalog.projections import SphereEquirectProjection
 from src.catalog.starcatalog import StarCatalog
 from src.catalog.telescope import Telescope

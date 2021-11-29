@@ -32,3 +32,24 @@ class Distance:
         dy = abs(np.sin(a[0]) * np.sin(a[1]) - np.sin(b[0]) * np.sin(b[1]))
         dz = abs(np.cos(a[0]) - np.cos(b[0]))
         return np.sqrt((dx * dx + dy * dy + dz * dz) * r)
+
+
+def find_neighbours(item, items, radius, dist_func):
+    neighbours = []
+    distances = []
+    for neighbour in items:
+        if item != neighbour:
+            distance = dist_func(item, neighbour)
+            if distance < radius:
+                neighbours.append(neighbour)
+                distances.append(distance)
+    return neighbours, distances
+
+
+def find_angle_vectors(center, first, second):
+    x0 = first[0] - center[0]
+    y0 = first[1] - center[1]
+    x1 = second[0] - center[0]
+    y1 = second[1] - center[1]
+    mag = np.sqrt((x0 * x0 + y0 * y0) * (x1 * x1 + y1 * y1))
+    return np.arccos(np.dot([x0, y0], [x1, y1]) / mag)
