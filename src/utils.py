@@ -1,40 +1,66 @@
+#! /usr/bin/env python3
+# -*- coding: utf-8 -*-
+""" Module docstring """  # ToDo: redact docstring
+
 from time import time
+
 import numpy as np
 
 
 def time_it(func):
+    """ Docstring """  # ToDo: redact docstring
+
     def wrapper(*args, **kwargs):
-        t0 = time()
+        """ Docstring """  # ToDo: redact docstring
+
+        start_time = time()
         data = func(*args, **kwargs)
-        t1 = time()
-        print('{:15s} took {:.5f} seconds'.format(func.__name__, t1 - t0))
+        end_time = time()
+
+        print(f"{func.__name__} took {end_time - start_time} seconds")
         return data
+
     return wrapper
 
 
 class Distance:
-    @staticmethod
-    def euclidean(a, b):
-        dx = a[0] - b[0]
-        dy = a[1] - b[1]
-        return np.sqrt(dx * dx + dy * dy)
+    """ Class docstring """  # ToDo: redact docstring
 
     @staticmethod
-    def manhattan(a, b):
-        dx = a[0] - b[0]
-        dy = a[1] - b[1]
-        return abs(dx) + abs(dy)
+    def euclidean(point_a, point_b):
+        """ Docstring """  # ToDo: redact docstring
+
+        x_dist = point_a[0] - point_b[0]
+        y_dist = point_a[1] - point_b[1]
+        return np.sqrt(x_dist * x_dist + y_dist * y_dist)
 
     @staticmethod
-    def between_spherical(a, b, r=1):
+    def manhattan(point_a, point_b):
+        """ Docstring """  # ToDo: redact docstring
+
+        x_dist = point_a[0] - point_b[0]
+        y_dist = point_a[1] - point_b[1]
+        return abs(x_dist) + abs(y_dist)
+
+    @staticmethod
+    def between_spherical(point_a, point_b, radius=1):
+        """ Docstring """  # ToDo: redact docstring
+
         # theta_from, theta_to, phi_from, phi_to = a[0], b[0], a[1], b[1]
-        dx = abs(np.sin(a[0]) * np.cos(a[1]) - np.sin(b[0]) * np.cos(b[1]))
-        dy = abs(np.sin(a[0]) * np.sin(a[1]) - np.sin(b[0]) * np.sin(b[1]))
-        dz = abs(np.cos(a[0]) - np.cos(b[0]))
-        return np.sqrt((dx * dx + dy * dy + dz * dz) * r)
+        x_dist = abs(
+            np.sin(point_a[0]) * np.cos(point_a[1]) -
+            np.sin(point_b[0]) * np.cos(point_b[1]))
+        y_dist = abs(
+            np.sin(point_a[0]) * np.sin(point_a[1]) -
+            np.sin(point_b[0]) * np.sin(point_b[1]))
+        z_dist = abs(np.cos(point_a[0]) - np.cos(point_b[0]))
+        return np.sqrt(
+            (x_dist * x_dist + y_dist * y_dist + z_dist * z_dist) * radius)
 
 
 def find_neighbours(item, items, radius, dist_func):
+    """ Docstring """  # ToDo: redact docstring
+
     neighbours = []
     distances = []
     for neighbour in items:
@@ -47,6 +73,8 @@ def find_neighbours(item, items, radius, dist_func):
 
 
 def find_angle_vectors(center, first, second):
+    """ Docstring """  # ToDo: redact docstring
+
     x0 = first[0] - center[0]
     y0 = first[1] - center[1]
     x1 = second[0] - center[0]

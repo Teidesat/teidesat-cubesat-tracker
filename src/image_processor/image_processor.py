@@ -1,40 +1,54 @@
-import cv2
+#! /usr/bin/env python3
+# -*- coding: utf-8 -*-
+""" Module docstring """  # ToDo: redact docstring
+
+import cv2 as cv
 import numpy as np
 
 KERNEL_Y = np.array([[1, 2, 1], [0, 0, 0], [-1, -2, -1]])
 KERNEL_X = np.array([[1, 0, -1], [2, 0, -2], [1, 0, -1]])
 
 
-def prune_close_points(indices, distance):
+def prune_close_points(indices, min_distance):
+    """ Docstring """  # ToDo: redact docstring
+
     pruned = []
-    for i, (y, x) in enumerate(indices):
+    for i, (y1_coord, x1_coord) in enumerate(indices):
         duplicated = False
-        for yy, xx in indices[i + 1:]:
-            d = abs(y - yy) + abs(x - xx)
-            if d < 10:
+        for y2_coord, x2_coord in indices[i + 1:]:
+            current_distance = (abs(y1_coord - y2_coord) +
+                                abs(x1_coord - x2_coord))
+            if current_distance < min_distance:
                 duplicated = True
                 break
         if not duplicated:
-            pruned.append((y, x))
+            pruned.append((y1_coord, x1_coord))
     return pruned
 
 
 def find_stars(image, threshold=20, px_sensitivity=10, fast=True, distance=20):
-    edges_x = cv2.filter2D(image, cv2.CV_8U, KERNEL_X)
-    edges_y = cv2.filter2D(image, cv2.CV_8U, KERNEL_Y)
+    """ Docstring """  # ToDo: redact docstring
+
+    edges_x = cv.filter2D(image, cv.CV_8U, KERNEL_X)
+    edges_y = cv.filter2D(image, cv.CV_8U, KERNEL_Y)
     mask = np.minimum(edges_x, edges_y)
     indices = np.argwhere(mask > threshold)
 
     if fast:
         # A) May give two (or more?) detections for one star
         # B) Not smooth transitions between frames
-        indices = np.round(indices / px_sensitivity) * px_sensitivity  # Group stars that are closer
+
+        # Group stars that are closer
+        indices = np.round(indices / px_sensitivity) * px_sensitivity
         indices = {(x, y) for y, x in indices}
         return indices
+
     else:
-        indices_round = np.round(indices / px_sensitivity) * px_sensitivity
         # Same as before but now store the original index to recover later the original coordinates
         # Then prune the positions that are too close
+
+        indices_round = np.round(indices / px_sensitivity) * px_sensitivity
         indices_round = {(y, x): i for i, (y, x) in enumerate(indices_round)}
-        indices = [(indices[i][1], indices[i][0]) for _, i in indices_round.items()]
+        indices = [(indices[i][1], indices[i][0])
+                   for _, i in indices_round.items()]
         return prune_close_points(indices, distance)
