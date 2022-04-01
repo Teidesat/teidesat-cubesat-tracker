@@ -4,7 +4,7 @@
 
 import numpy as np
 
-from utils import time_it
+from src.utils import time_it
 
 
 class StarDescriptor:

@@ -6,10 +6,10 @@ from pathlib import Path
 
 import cv2 as cv
 
-from catalog.projections import SphereEquirectProjection
-from catalog.star_catalog import StarCatalog
-from catalog.telescope import Telescope
-from extra_math.vector3d import SVector3D
+from src.catalog.projections import SphereEquirectProjection
+from src.catalog.star_catalog import StarCatalog
+from src.catalog.telescope import Telescope
+from src.extra_math.vector3d import SVector3D
 
 FILE = Path("./data/catalog/hygdata_v3.csv")
 

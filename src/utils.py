@@ -8,16 +8,17 @@ import numpy as np
 
 
 def time_it(func):
-    """ Docstring """  # ToDo: redact docstring
+    """ Function to add a timer to the execution of a given function. """
 
     def wrapper(*args, **kwargs):
-        """ Docstring """  # ToDo: redact docstring
+        """ Returned function with the time tracking added. """
 
         start_time = time()
         data = func(*args, **kwargs)
         end_time = time()
 
-        print(f"{func.__name__} took {end_time - start_time} seconds")
+        print(f"  {func.__name__} took {end_time - start_time:.10f} seconds",
+              end="\r")
         return data
 
     return wrapper

@@ -1,54 +1,56 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
-""" Module docstring
-
+"""
 TeideSat Satelite Tracking for the Optical Ground Station
 
 # ToDo: Check if this is correct
-    This program is free software: you can redistribute it and/or modify it
-under the terms of the GNU General Public License as published by the Free
-Software Foundation, either version 3 of the License, or (at your option) any
-later version.
-    This program is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
-You should have received a copy of the GNU General Public License along with
-this program. If not, see <http://www.gnu.org/licenses/>.
+#     This program is free software: you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the Free
+# Software Foundation, either version 3 of the License, or (at your option) any
+# later version.
+#     This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License along with
+# this program. If not, see <http://www.gnu.org/licenses/>.
 """ # ToDo: complete module docstring
 
-# ToDo: add the module information to this template
-__author__ = "One solo developer"
-__authors__ = ["One developer", "And another one", "etc"]
-__contact__ = "mail@example.com"
-__copyright__ = "Copyright $YEAR, $COMPANY_NAME"
-__credits__ = ["One developer", "And another one", "etc"]
-__date__ = "YYYY/MM/DD"
+# ToDo: add the mising module information
+__authors__ = ["Jorge Sierra", "Sergio Tabares Hernández"]
+# __contact__ = "mail@example.com"
+# __copyright__ = "Copyright $YEAR, $COMPANY_NAME"
+__credits__ = ["Jorge Sierra", "Sergio Tabares Hernández"]
+__date__ = "2022/03/31"
 __deprecated__ = False
-__email__ = "mail@example.com"
-__license__ = "GPLv3"
-__maintainer__ = "developer"
+# __email__ = "mail@example.com"
+# __license__ = "GPLv3"
+__maintainer__ = "Sergio Tabares Hernández"
 __status__ = "Production"
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 
 import sys
 
 from collections import defaultdict
 from pathlib import Path
+from time import time
 
 import cv2 as cv
 import numpy as np
 
-from catalog.star_catalog import StarCatalog
-from image_processor.image_processor import find_stars
-from image_processor.star_descriptor import StarDescriptor
-from utils import time_it, Distance
+from src.catalog.star_catalog import StarCatalog
+from src.image_processor.image_processor import find_stars
+from src.image_processor.star_descriptor import StarDescriptor
+from src.utils import time_it, Distance
 
 #* Constants
 THRESHOLD = 20
 PX_SENSITIVITY = 8
-PATH_FRAME = Path("../data/frames/video1/frame2000.jpg")
-PATH_VIDEO = Path("../data/videos/video1.mp4")
-PATH_CATALOG = Path("../data/catalog/hygdata_v3.csv")
+FAST = True
+DISTANCE = 20
+
+PATH_FRAME = Path("./data/frames/video1/frame2000.jpg")
+PATH_VIDEO = Path("./data/videos/video1.mp4")
+PATH_CATALOG = Path("./data/catalog/hygdata_v3.csv")
 
 #* Variables
 translator = {}
@@ -58,45 +60,89 @@ pairs = []
 find_stars = time_it(find_stars)
 
 
-def process_image(image, threshold, px_sensitivity):
-    """ Docstring """  # ToDo: redact docstring
+def main():
+    """ Main function to start the program execution. """
+    # single_frame_test()
+
+    # video_test(algorithm_index=8)
+
+    for index in range(1, 9):
+        print(f"Video test {index}...")
+        video_test(algorithm_index=index)
+
+    # identify_test()
+
+
+def process_image(image,
+                  algorithm_index=7,
+                  threshold=THRESHOLD,
+                  px_sensitivity=PX_SENSITIVITY,
+                  fast=FAST,
+                  distance=DISTANCE):
+    """ Function to process the given image and mark the detected stars. """
 
     gray = cv.cvtColor(image, cv.COLOR_RGB2GRAY)
-    stars = find_stars(gray, threshold, px_sensitivity, fast=False)
+    stars = find_stars(gray, threshold, px_sensitivity, fast,
+                       distance, algorithm_index)
+
     for x_coord, y_coord in stars:
-        cv.circle(image, (int(x_coord), int(y_coord)),
-                  10,
-                  color=(0, 0, 100),
-                  thickness=1)
+        cv.circle(
+            image,
+            center=(int(x_coord), int(y_coord)),
+            radius=10,
+            color=(0, 0, 100),
+            thickness=1,
+        )
     return image
 
 
-def single_frame_test():
-    """ Docstring """  # ToDo: redact docstring
+def single_frame_test(str_path_frame=str(PATH_FRAME), algorithm_index=7):
+    """ Function to test the implemented processing image methods with a single
+    video frame or image. """
 
-    image = cv.imread(str(PATH_FRAME))
+    print("Processing frame from:", str_path_frame)
+    image = cv.imread(str_path_frame)
     if image is None:
         sys.exit("Could not read the image.")
 
-    image = process_image(image, THRESHOLD, PX_SENSITIVITY)
+    image = process_image(image, algorithm_index)
+    print("\n")
 
-    cv.imshow(str(PATH_VIDEO), image)
+    cv.imshow(str_path_frame, image)
     cv.waitKey(0)
     cv.destroyAllWindows()
 
 
-def video_test():
-    """ Docstring """  # ToDo: redact docstring
+def video_test(str_path_video=str(PATH_VIDEO), algorithm_index=7):
+    """ Function to test the implemented processing image methods with a whole
+    video. """
 
-    vidcap = cv.VideoCapture(str(PATH_VIDEO))
+    print("Processing video from:", str_path_video)
+    vidcap = cv.VideoCapture(str_path_video)
     success, image = vidcap.read()
+
     count = 0
+    start_time = time()
+
     while success:
-        image = process_image(image, THRESHOLD, PX_SENSITIVITY)
-        cv.imshow(str(PATH_VIDEO), image)
-        cv.waitKey(1)
+        image = process_image(image, algorithm_index)
+        cv.imshow(str_path_video, image)
+
+        key = cv.waitKey(1)
+        if key == ord('q') or key == ord('s'):
+            break
+
         success, image = vidcap.read()
         count += 1
+
+    end_time = time()
+    process_time = end_time - start_time
+
+    print("                                                        ", end="\r")
+    print("  Processed frames:", count)
+    print("  Time needed:", process_time)
+    print("  FPS:", count / process_time)
+    print()
 
 
 def find_add_candidates(descriptors, descriptor, dic):
@@ -253,6 +299,4 @@ def identify_test():
 
 
 if __name__ == "__main__":
-    single_frame_test()
-    # video_test()
-    # identify_test()
+    main()

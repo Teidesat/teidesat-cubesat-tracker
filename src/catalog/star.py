@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """ Module docstring """  # ToDo: redact docstring
 
-from utils import find_neighbours, find_angle_vectors
-# from image_processor.star_descriptor import StarDescriptor
+from src.utils import find_neighbours, find_angle_vectors
+# from src.image_processor.star_descriptor import StarDescriptor
 
 
 class Descriptor:

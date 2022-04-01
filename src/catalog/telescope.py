@@ -4,7 +4,7 @@
 
 import numpy as np
 
-from extra_math.vector3d import SVector3D
+from src.extra_math.vector3d import SVector3D
 
 
 class Telescope:

@@ -8,9 +8,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from catalog.color_dict import ColorDict
-from catalog.projections import SphereProjection
-from catalog.star import Star
+from src.catalog.color_dict import ColorDict
+from src.catalog.projections import SphereProjection
+from src.catalog.star import Star
 
 
 class StarCatalog:

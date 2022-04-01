@@ -1,6 +1,8 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
-""" Module docstring """  # ToDo: redact docstring
+"""
+Simple script to store all the frames of a video as separate images.
+"""
 
 import sys
 
@@ -13,7 +15,7 @@ OUTPUT = Path("../data/frames")
 
 
 def store_frames(video_path: Path, output_dir: Path):
-    """ Store frames from a video to process """
+    """ Function to store the frames from a given video to process. """
 
     output_subdir = output_dir / video_path.stem
     output_subdir.mkdir(parents=True, exist_ok=True)
