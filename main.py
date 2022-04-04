@@ -78,7 +78,7 @@ def main():
 
 
 def process_image(image,
-                  algorithm_index=7,
+                  algorithm_index=8,
                   threshold=THRESHOLD,
                   px_sensitivity=PX_SENSITIVITY,
                   fast=FAST,
@@ -101,7 +101,7 @@ def process_image(image,
     return image
 
 
-def single_frame_test(str_path_frame=str(PATH_FRAME), algorithm_index=7):
+def single_frame_test(str_path_frame=str(PATH_FRAME), algorithm_index=8):
     """ Function to test the implemented processing image methods with a single
     video frame or image. """
 
@@ -118,7 +118,7 @@ def single_frame_test(str_path_frame=str(PATH_FRAME), algorithm_index=7):
     cv.destroyAllWindows()
 
 
-def video_test(str_path_video=str(PATH_VIDEO), algorithm_index=7):
+def video_test(str_path_video=str(PATH_VIDEO), algorithm_index=8):
     """ Function to test the implemented processing image methods with a whole
     video. """
 
