@@ -52,12 +52,16 @@ PATH_FRAME = Path("./data/frames/video1/frame2000.jpg")
 PATH_VIDEO = Path("./data/videos/video1.mp4")
 PATH_CATALOG = Path("./data/catalog/hygdata_v3.csv")
 
+CHECKING_VIDEO_VELOCITY = False
+CHECKING_FRAME_VELOCITY = True
+
 #* Variables
 translator = {}
 pairs = []
 
 #* Decorator
-find_stars = time_it(find_stars)
+if CHECKING_FRAME_VELOCITY:
+    find_stars = time_it(find_stars)
 
 
 def main():
@@ -82,17 +86,18 @@ def process_image(image,
     """ Function to process the given image and mark the detected stars. """
 
     gray = cv.cvtColor(image, cv.COLOR_RGB2GRAY)
-    stars = find_stars(gray, threshold, px_sensitivity, fast,
-                       distance, algorithm_index)
+    stars = find_stars(gray, threshold, px_sensitivity, fast, distance,
+                       algorithm_index)
 
-    for x_coord, y_coord in stars:
-        cv.circle(
-            image,
-            center=(int(x_coord), int(y_coord)),
-            radius=10,
-            color=(0, 0, 100),
-            thickness=1,
-        )
+    if not CHECKING_VIDEO_VELOCITY:
+        for x_coord, y_coord in stars:
+            cv.circle(
+                image,
+                center=(int(x_coord), int(y_coord)),
+                radius=10,
+                color=(0, 0, 100),
+                thickness=1,
+            )
     return image
 
 
@@ -121,27 +126,36 @@ def video_test(str_path_video=str(PATH_VIDEO), algorithm_index=7):
     vidcap = cv.VideoCapture(str_path_video)
     success, image = vidcap.read()
 
-    count = 0
-    start_time = time()
+    if CHECKING_VIDEO_VELOCITY:
+        count = 0
+        start_time = time()
 
     while success:
         image = process_image(image, algorithm_index)
-        cv.imshow(str_path_video, image)
 
-        key = cv.waitKey(1)
-        if key == ord('q') or key == ord('s'):
-            break
+        if CHECKING_VIDEO_VELOCITY:
+            count += 1
+        else:
+            cv.imshow(str_path_video, image)
+
+            key = cv.waitKey(1)
+            if key == ord('q') or key == ord('s'):
+                break
 
         success, image = vidcap.read()
-        count += 1
-
-    end_time = time()
-    process_time = end_time - start_time
 
     print("                                                        ", end="\r")
-    print("  Processed frames:", count)
-    print("  Time needed:", process_time)
-    print("  FPS:", count / process_time)
+    if CHECKING_VIDEO_VELOCITY:
+        end_time = time()
+        process_time = end_time - start_time
+
+        if CHECKING_FRAME_VELOCITY:
+            print("  *Video process time could not be real",
+                  "if also checking frame process time.*")
+
+        print("  Processed frames:", count)
+        print("  Time needed:", process_time)
+        print("  FPS:", count / process_time)
     print()
 
 
