@@ -38,7 +38,8 @@ import cv2 as cv
 import numpy as np
 
 from src.catalog.star_catalog import StarCatalog
-from src.image_processor.image_processor import find_stars
+from src.image_processor.image_processor import (find_stars,
+                                                 detect_blinking_star)
 from src.image_processor.star_descriptor import StarDescriptor
 from src.utils import time_it, Distance
 
@@ -73,9 +74,11 @@ def main():
     # video_test(algorithm_index=BEST_ALGORITHM_INDEX)
 
     #* comparison of all different find_stars' algorithms
-    for index in range(1, 9):
-        print(f"Video test {index}...")
-        video_test(algorithm_index=index)
+    # for index in range(1, 9):
+    #     print(f"Video test {index}...")
+    #     video_test(algorithm_index=index)
+
+    blinking_star_test()
 
     # identify_test()
 
@@ -164,6 +167,29 @@ def video_test(
     print()
 
     cv.destroyAllWindows()
+
+
+def blinking_star_test(desired_blinking_freq=30):
+    """ Function to detect the blinking star. """
+
+    video_frames = list()
+    fps = 60  # ToDo: how do I know this value in real time?
+
+    video_frame_paths = [
+        str(Path("./data/images/stellarium-003.png")),
+        str(Path("./data/images/stellarium-004.png")),
+        str(Path("./data/images/stellarium-005.png")),
+        str(Path("./data/images/stellarium-006.png")),
+    ]
+
+    for frame_path in video_frame_paths:
+        frame = cv.imread(frame_path)
+        if frame is None:
+            sys.exit("Could not read the image.")
+        else:
+            video_frames.append(frame)
+
+    detect_blinking_star(desired_blinking_freq, video_frames, fps)
 
 
 def find_add_candidates(descriptors, descriptor, dic):
