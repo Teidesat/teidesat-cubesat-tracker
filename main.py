@@ -47,6 +47,7 @@ THRESHOLD = 20
 PX_SENSITIVITY = 8
 FAST = True
 DISTANCE = 20
+BEST_ALGORITHM_INDEX = 8
 
 PATH_FRAME = Path("./data/frames/video1/frame2000.jpg")
 PATH_VIDEO = Path("./data/videos/video1.mp4")
@@ -66,10 +67,12 @@ if CHECKING_FRAME_VELOCITY:
 
 def main():
     """ Main function to start the program execution. """
+
     # single_frame_test()
 
-    # video_test(algorithm_index=8)
+    # video_test(algorithm_index=BEST_ALGORITHM_INDEX)
 
+    #* comparison of all different find_stars' algorithms
     for index in range(1, 9):
         print(f"Video test {index}...")
         video_test(algorithm_index=index)
@@ -78,11 +81,11 @@ def main():
 
 
 def process_image(image,
-                  algorithm_index=8,
-                  threshold=THRESHOLD,
-                  px_sensitivity=PX_SENSITIVITY,
-                  fast=FAST,
-                  distance=DISTANCE):
+                  threshold: float = THRESHOLD,
+                  px_sensitivity: int = PX_SENSITIVITY,
+                  fast: bool = FAST,
+                  distance: float = DISTANCE,
+                  algorithm_index: int = BEST_ALGORITHM_INDEX):
     """ Function to process the given image and mark the detected stars. """
 
     gray = cv.cvtColor(image, cv.COLOR_RGB2GRAY)
@@ -94,14 +97,15 @@ def process_image(image,
             cv.circle(
                 image,
                 center=(int(x_coord), int(y_coord)),
-                radius=10,
+                radius=PX_SENSITIVITY,
                 color=(0, 0, 100),
                 thickness=1,
             )
     return image
 
 
-def single_frame_test(str_path_frame=str(PATH_FRAME), algorithm_index=8):
+def single_frame_test(
+        str_path_frame=str(PATH_FRAME), algorithm_index=BEST_ALGORITHM_INDEX):
     """ Function to test the implemented processing image methods with a single
     video frame or image. """
 
@@ -110,7 +114,7 @@ def single_frame_test(str_path_frame=str(PATH_FRAME), algorithm_index=8):
     if image is None:
         sys.exit("Could not read the image.")
 
-    image = process_image(image, algorithm_index)
+    image = process_image(image, algorithm_index=algorithm_index)
     print("\n")
 
     cv.imshow(str_path_frame, image)
@@ -118,7 +122,8 @@ def single_frame_test(str_path_frame=str(PATH_FRAME), algorithm_index=8):
     cv.destroyAllWindows()
 
 
-def video_test(str_path_video=str(PATH_VIDEO), algorithm_index=8):
+def video_test(
+        str_path_video=str(PATH_VIDEO), algorithm_index=BEST_ALGORITHM_INDEX):
     """ Function to test the implemented processing image methods with a whole
     video. """
 
@@ -127,14 +132,14 @@ def video_test(str_path_video=str(PATH_VIDEO), algorithm_index=8):
     success, image = vidcap.read()
 
     if CHECKING_VIDEO_VELOCITY:
-        count = 0
+        processed_frames = 0
         start_time = time()
 
     while success:
-        image = process_image(image, algorithm_index)
+        image = process_image(image, algorithm_index=algorithm_index)
 
         if CHECKING_VIDEO_VELOCITY:
-            count += 1
+            processed_frames += 1
         else:
             cv.imshow(str_path_video, image)
 
@@ -153,10 +158,12 @@ def video_test(str_path_video=str(PATH_VIDEO), algorithm_index=8):
             print("  *Video process time could not be real",
                   "if also checking frame process time.*")
 
-        print("  Processed frames:", count)
+        print("  Processed frames:", processed_frames)
         print("  Time needed:", process_time)
-        print("  FPS:", count / process_time)
+        print("  FPS:", processed_frames / process_time)
     print()
+
+    cv.destroyAllWindows()
 
 
 def find_add_candidates(descriptors, descriptor, dic):

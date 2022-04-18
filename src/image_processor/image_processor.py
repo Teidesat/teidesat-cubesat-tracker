@@ -9,6 +9,13 @@ import cv2 as cv
 import numpy as np
 import skimage.feature
 
+#* Constants
+THRESHOLD = 200
+PX_SENSITIVITY = 8
+FAST = True
+DISTANCE = 20
+BEST_ALGORITHM_INDEX = 8
+
 KERNEL_Y = np.array([[1, 2, 1], [0, 0, 0], [-1, -2, -1]])
 KERNEL_X = np.array([[1, 0, -1], [2, 0, -2], [1, 0, -1]])
 
@@ -32,12 +39,13 @@ def prune_close_points(indices: list[tuple[int, int]],
     return pruned
 
 
-def find_stars(image,
-               threshold: float = 20,
-               px_sensitivity: int = 10,
-               fast: bool = True,
-               distance: float = 20,
-               algorithm_index: int = 8) -> list[tuple[int, int]]:
+def find_stars(
+        image,
+        threshold: float = THRESHOLD,
+        px_sensitivity: int = PX_SENSITIVITY,
+        fast: bool = FAST,
+        distance: float = DISTANCE,
+        algorithm_index: int = BEST_ALGORITHM_INDEX) -> list[tuple[int, int]]:
     """
     Function to get all the bright points of a given image.
 
@@ -55,7 +63,7 @@ def find_stars(image,
     """
 
     algorithms_list = [
-        jorge_algorithm,
+        sobel_filter,
         adaptative_threshold,
         scikit_blob_log,
         scikit_blob_dog,
@@ -69,8 +77,8 @@ def find_stars(image,
                                                 px_sensitivity, fast, distance)
 
 
-def jorge_algorithm(image, threshold: float, px_sensitivity: int, fast: bool,
-                    distance: float) -> list[tuple[int, int]]:
+def sobel_filter(image, threshold: float, px_sensitivity: int, fast: bool,
+                 distance: float) -> list[tuple[int, int]]:
     """ Sobel filter's implementation for star detection. """
 
     edges_x = cv.filter2D(image, cv.CV_8U, KERNEL_X)
@@ -228,7 +236,8 @@ def opencv_fast(image, threshold: float, px_sensitivity: int, fast: bool,
     """ OpenCV's Features from Accelerated Segment Test (FAST) algorithm for
     star detection. """
 
-    fast_alg = cv.FastFeatureDetector_create(threshold=40)
+    fast_alg = cv.FastFeatureDetector_create(threshold=threshold)
+    # fast_alg = cv.FastFeatureDetector_create(threshold=40)
     keypoints = fast_alg.detect(image, None)
     points = [keypoint.pt for keypoint in keypoints]
 
