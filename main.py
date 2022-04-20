@@ -28,7 +28,6 @@ __maintainer__ = "Sergio Tabares Hernández"
 __status__ = "Production"
 __version__ = "0.0.2"
 
-from itertools import cycle
 import sys
 
 from collections import defaultdict
@@ -45,7 +44,7 @@ from src.image_processor.star_descriptor import StarDescriptor
 from src.utils import time_it, Distance
 
 #* Constants
-THRESHOLD = 20
+THRESHOLD = 40
 PX_SENSITIVITY = 8
 FAST = True
 DISTANCE = 20
@@ -57,6 +56,8 @@ PATH_CATALOG = Path("./data/catalog/hygdata_v3.csv")
 
 CHECKING_VIDEO_VELOCITY = False
 CHECKING_FRAME_VELOCITY = True
+
+COLOR_CAMERA = True
 
 #* Variables
 translator = {}
@@ -93,7 +94,8 @@ def process_image(image,
                   algorithm_index: int = BEST_ALGORITHM_INDEX):
     """ Function to process the given image and mark the detected stars. """
 
-    gray = cv.cvtColor(image, cv.COLOR_RGB2GRAY)
+    if COLOR_CAMERA:
+        gray = cv.cvtColor(image, cv.COLOR_RGB2GRAY)
     stars = find_stars(gray, threshold, px_sensitivity, fast, distance,
                        algorithm_index)
 
@@ -174,28 +176,51 @@ def video_test(
 def blinking_star_test(desired_blinking_freq=30):
     """ Function to test the detection of the blinking star. """
 
-    video_frames = []
-    fps = 60  # ToDo: how do I know this value in real time?
+    fps = 60  #? how do I know this value in real time?
 
-    video_frame_paths = [
-        str(Path("./data/images/stellarium-003.png")),
-        str(Path("./data/images/stellarium-004.png")),
-        str(Path("./data/images/stellarium-005.png")),
-        str(Path("./data/images/stellarium-006.png")),
-    ]
+    mini_test = False
+    if mini_test:
+        video_frame_paths = [
+            str(Path("./data/images/stellarium-003.png")),
+            str(Path("./data/images/stellarium-004.png")),
+            str(Path("./data/images/stellarium-005.png")),
+            str(Path("./data/images/stellarium-006.png")),
+        ]
+        # video_frame_paths = [
+        #     str(Path("./data/images/stellarium-007.png")),
+        #     str(Path("./data/images/stellarium-008.png")),
+        #     str(Path("./data/images/stellarium-009.png")),
+        #     str(Path("./data/images/stellarium-010.png")),
+        # ]
 
-    for frame_path in video_frame_paths:
-        frame = cv.imread(frame_path)
-        if frame is None:
-            sys.exit("Could not read the image.")
-        else:
-            video_frames.append(frame)
+        video_frames = []
+        for frame_path in video_frame_paths:
+            frame = cv.imread(frame_path)
+            if frame is None:
+                sys.exit("Could not read the image.")
+            else:
+                video_frames.append(frame)
+
+    else:
+        str_path_video = str(PATH_VIDEO)
+        vidcap = cv.VideoCapture(str_path_video)
+
+    if CHECKING_VIDEO_VELOCITY:
+        start_time = time()
 
     processed_frames = 0
     detected_stars = {}
 
-    for frame in cycle(video_frames):
-        gray = cv.cvtColor(frame, cv.COLOR_RGB2GRAY)
+    while True:
+        if mini_test:
+            frame = video_frames[processed_frames % len(video_frames)]
+        else:
+            success, frame = vidcap.read()
+            if not success:
+                break
+
+        if COLOR_CAMERA:
+            gray = cv.cvtColor(frame, cv.COLOR_RGB2GRAY)
         star_positions = find_stars(gray, THRESHOLD, PX_SENSITIVITY, FAST,
                                     DISTANCE, BEST_ALGORITHM_INDEX)
         processed_frames += 1
@@ -204,19 +229,35 @@ def blinking_star_test(desired_blinking_freq=30):
             star_positions, detected_stars, processed_frames,
             desired_blinking_freq, fps)
 
-        show_frame = frame.copy()
-        if blinking_star is not None:
-            cv.circle(
-                show_frame,
-                center=(int(blinking_star[0][0]), int(blinking_star[0][1])),
-                radius=10,
-                color=(0, 0, 100),
-                thickness=1,
-            )
-        cv.imshow("blinking star", show_frame)
+        if not CHECKING_VIDEO_VELOCITY:
+            show_frame = frame.copy()
+            if blinking_star is not None:
+                cv.circle(
+                    show_frame,
+                    center=(int(blinking_star[0][0]),
+                            int(blinking_star[0][1])),
+                    radius=10,
+                    color=(0, 0, 100),
+                    thickness=1,
+                )
+            cv.imshow("blinking star", show_frame)
 
-        if cv.waitKey(1) == ord('q'):
-            break
+            if cv.waitKey(1) == ord('q'):
+                break
+
+    print("                                                        ", end="\r")
+    if CHECKING_VIDEO_VELOCITY:
+        end_time = time()
+        process_time = end_time - start_time
+
+        if CHECKING_FRAME_VELOCITY:
+            print("  *Video process time could not be real",
+                  "if also checking frame process time.*")
+
+        print("  Processed frames:", processed_frames)
+        print("  Time needed:", process_time)
+        print("  FPS:", processed_frames / process_time)
+    print()
 
     cv.destroyAllWindows()
 
@@ -246,7 +287,8 @@ def identify_test():
 
     # Process image
     image = cv.imread(str(PATH_FRAME)).astype("uint8")
-    gray = cv.cvtColor(image, cv.COLOR_RGB2GRAY)
+    if COLOR_CAMERA:
+        gray = cv.cvtColor(image, cv.COLOR_RGB2GRAY)
     stars = find_stars(gray, THRESHOLD, PX_SENSITIVITY, fast=False)
 
     # Chose a subset

@@ -5,16 +5,19 @@ File with the implementation of the image processing functions and star
 detection algorithms.
 """
 
+from math import inf, dist
+
 import cv2 as cv
 import numpy as np
 import skimage.feature
 
 #* Constants
-THRESHOLD = 200
+THRESHOLD = 40
 PX_SENSITIVITY = 8
 FAST = True
 DISTANCE = 20
 BEST_ALGORITHM_INDEX = 8
+DEFAULT_LIFETIME = 20
 
 KERNEL_Y = np.array([[1, 2, 1], [0, 0, 0], [-1, -2, -1]])
 KERNEL_X = np.array([[1, 0, -1], [2, 0, -2], [1, 0, -1]])
@@ -247,20 +250,61 @@ def opencv_fast(image, threshold: float, px_sensitivity: int, fast: bool,
     return points
 
 
-def detect_blinking_star(star_positions, detected_stars, processed_frames,
-                         desired_blinking_freq, fps):
+def detect_blinking_star(star_positions: list[tuple[int, int]],
+                         detected_stars: dict, processed_frames: int,
+                         desired_blinking_freq: float,
+                         fps: float) -> tuple[tuple[int, int], dict]:
     """ Function to detect which one of the found stars is blinking the closest
     to the desired frequency. """
 
-    for star_pos in star_positions:
-        star_info = detected_stars.get(star_pos, {
-            "times_detected": 0,
-            "blinking_freq": 0
-        })
-        star_info["times_detected"] += 1
-        star_info["blinking_freq"] = (
-            (star_info["times_detected"] / processed_frames) * fps)
-        detected_stars.update({star_pos: star_info})
+    for old_star_pos, star_info in detected_stars.copy().items():
+        equivalent_star = None
+        best_candidate_dist = inf
+        for new_star_pos in star_positions:
+            current_pair_dist = dist(old_star_pos, new_star_pos)
+
+            if (current_pair_dist < DISTANCE
+                    and best_candidate_dist > current_pair_dist):
+                best_candidate_dist = current_pair_dist
+                equivalent_star = new_star_pos
+
+        if equivalent_star is not None:
+            star_positions.remove(equivalent_star)
+            detected_stars.pop(old_star_pos)
+            detected_stars.update({
+                equivalent_star: {
+                    "times_detected":
+                    star_info["times_detected"] + 1,
+                    "lifetime":
+                    DEFAULT_LIFETIME,
+                    "blinking_freq":
+                    ((star_info["times_detected"] / processed_frames) * fps),
+                }
+            })
+
+        else:
+            if star_info["lifetime"] == 0:
+                detected_stars.pop(old_star_pos)
+            else:
+                detected_stars.update({
+                    old_star_pos: {
+                        "times_detected":
+                        star_info["times_detected"],
+                        "lifetime":
+                        star_info["lifetime"] - 1,
+                        "blinking_freq":
+                        ((star_info["times_detected"] / processed_frames) *
+                         fps),
+                    }
+                })
+
+    detected_stars.update(
+        dict.fromkeys(
+            star_positions, {
+                "times_detected": 1,
+                "lifetime": DEFAULT_LIFETIME,
+                "blinking_freq": fps,
+            }))
 
     blinking_star = None
     if len(detected_stars) > 0:
