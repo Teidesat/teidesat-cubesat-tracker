@@ -28,6 +28,7 @@ __maintainer__ = "Sergio Tabares Hernández"
 __status__ = "Production"
 __version__ = "0.0.2"
 
+from itertools import cycle
 import sys
 
 from collections import defaultdict
@@ -63,7 +64,8 @@ pairs = []
 
 #* Decorator
 if CHECKING_FRAME_VELOCITY:
-    find_stars = time_it(find_stars)
+    # find_stars = time_it(find_stars)
+    detect_blinking_star = time_it(detect_blinking_star)
 
 
 def main():
@@ -170,9 +172,9 @@ def video_test(
 
 
 def blinking_star_test(desired_blinking_freq=30):
-    """ Function to detect the blinking star. """
+    """ Function to test the detection of the blinking star. """
 
-    video_frames = list()
+    video_frames = []
     fps = 60  # ToDo: how do I know this value in real time?
 
     video_frame_paths = [
@@ -189,7 +191,34 @@ def blinking_star_test(desired_blinking_freq=30):
         else:
             video_frames.append(frame)
 
-    detect_blinking_star(desired_blinking_freq, video_frames, fps)
+    processed_frames = 0
+    detected_stars = {}
+
+    for frame in cycle(video_frames):
+        gray = cv.cvtColor(frame, cv.COLOR_RGB2GRAY)
+        star_positions = find_stars(gray, THRESHOLD, PX_SENSITIVITY, FAST,
+                                    DISTANCE, BEST_ALGORITHM_INDEX)
+        processed_frames += 1
+
+        blinking_star, detected_stars = detect_blinking_star(
+            star_positions, detected_stars, processed_frames,
+            desired_blinking_freq, fps)
+
+        show_frame = frame.copy()
+        if blinking_star is not None:
+            cv.circle(
+                show_frame,
+                center=(int(blinking_star[0][0]), int(blinking_star[0][1])),
+                radius=10,
+                color=(0, 0, 100),
+                thickness=1,
+            )
+        cv.imshow("blinking star", show_frame)
+
+        if cv.waitKey(1) == ord('q'):
+            break
+
+    cv.destroyAllWindows()
 
 
 def find_add_candidates(descriptors, descriptor, dic):

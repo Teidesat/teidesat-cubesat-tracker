@@ -5,8 +5,6 @@ File with the implementation of the image processing functions and star
 detection algorithms.
 """
 
-from itertools import cycle
-
 import cv2 as cv
 import numpy as np
 import skimage.feature
@@ -244,52 +242,30 @@ def opencv_fast(image, threshold: float, px_sensitivity: int, fast: bool,
     points = [keypoint.pt for keypoint in keypoints]
 
     if not fast:
-        points = prune_close_points(list(points), distance)
+        points = prune_close_points(points, distance)
 
     return points
 
 
-def detect_blinking_star(desired_blinking_freq, video_frames, fps):
+def detect_blinking_star(star_positions, detected_stars, processed_frames,
+                         desired_blinking_freq, fps):
     """ Function to detect which one of the found stars is blinking the closest
     to the desired frequency. """
 
-    processed_frames = 0
-    detected_stars = {}
+    for star_pos in star_positions:
+        star_info = detected_stars.get(star_pos, {
+            "times_detected": 0,
+            "blinking_freq": 0
+        })
+        star_info["times_detected"] += 1
+        star_info["blinking_freq"] = (
+            (star_info["times_detected"] / processed_frames) * fps)
+        detected_stars.update({star_pos: star_info})
+
     blinking_star = None
+    if len(detected_stars) > 0:
+        blinking_star = min(detected_stars.items(),
+                            key=lambda star: abs(star[1]["blinking_freq"] -
+                                                 desired_blinking_freq))
 
-    for frame in cycle(video_frames):
-        gray = cv.cvtColor(frame, cv.COLOR_RGB2GRAY)
-        star_positions = find_stars(gray, THRESHOLD, PX_SENSITIVITY, FAST,
-                                    DISTANCE, BEST_ALGORITHM_INDEX)
-        processed_frames += 1
-
-        for star_pos in star_positions:
-            star_info = detected_stars.get(star_pos, {
-                "times_detected": 0,
-                "blinking_freq": 0
-            })
-            star_info["times_detected"] += 1
-            star_info["blinking_freq"] = (
-                (star_info["times_detected"] / processed_frames) * fps)
-            detected_stars.update({star_pos: star_info})
-
-        if len(detected_stars) > 0:
-            blinking_star = min(detected_stars.items(),
-                                key=lambda star: abs(star[1]["blinking_freq"] -
-                                                     desired_blinking_freq))
-
-        show_frame = frame.copy()
-        if blinking_star is not None:
-            cv.circle(
-                show_frame,
-                center=(int(blinking_star[0][0]), int(blinking_star[0][1])),
-                radius=10,
-                color=(0, 0, 100),
-                thickness=1,
-            )
-        cv.imshow("blinking star", show_frame)
-
-        if cv.waitKey(100) == ord('q'):
-            break
-
-    cv.destroyAllWindows()
+    return blinking_star, detected_stars
