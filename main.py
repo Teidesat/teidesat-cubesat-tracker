@@ -32,7 +32,7 @@ import sys
 
 from collections import defaultdict
 from pathlib import Path
-from time import time
+from time import perf_counter
 
 import cv2 as cv
 import numpy as np
@@ -141,7 +141,7 @@ def video_test(
 
     if CHECKING_VIDEO_VELOCITY:
         processed_frames = 0
-        start_time = time()
+        start_time = perf_counter()
 
     while success:
         image = process_image(image, algorithm_index=algorithm_index)
@@ -159,16 +159,15 @@ def video_test(
 
     print("                                                        ", end="\r")
     if CHECKING_VIDEO_VELOCITY:
-        end_time = time()
-        process_time = end_time - start_time
+        processing_time = perf_counter() - start_time
 
         if CHECKING_FRAME_VELOCITY:
             print("  *Video process time could not be real",
                   "if also checking frame process time.*")
 
         print("  Processed frames:", processed_frames)
-        print("  Time needed:", process_time)
-        print("  FPS:", processed_frames / process_time)
+        print("  Time needed:", processing_time)
+        print("  FPS:", processed_frames / processing_time)
     print()
 
     cv.destroyAllWindows()
@@ -201,7 +200,7 @@ def blinking_star_test(desired_blinking_freq=30):
         vidcap = cv.VideoCapture(str_path_video)
 
     if CHECKING_VIDEO_VELOCITY:
-        start_time = time()
+        start_time = perf_counter()
 
     processed_frames = 0
     detected_stars = {}
@@ -232,7 +231,7 @@ def blinking_star_test(desired_blinking_freq=30):
                     show_frame,
                     center=(int(blinking_star[0][0]),
                             int(blinking_star[0][1])),
-                    radius=10,
+                    radius=PX_SENSITIVITY,
                     color=(0, 0, 100),
                     thickness=1,
                 )
@@ -243,16 +242,15 @@ def blinking_star_test(desired_blinking_freq=30):
 
     print("                                                        ", end="\r")
     if CHECKING_VIDEO_VELOCITY:
-        end_time = time()
-        process_time = end_time - start_time
+        processing_time = perf_counter() - start_time
 
         if CHECKING_FRAME_VELOCITY:
             print("  *Video process time could not be real",
                   "if also checking frame process time.*")
 
         print("  Processed frames:", processed_frames)
-        print("  Time needed:", process_time)
-        print("  FPS:", processed_frames / process_time)
+        print("  Time needed:", processing_time)
+        print("  FPS:", processed_frames / processing_time)
     print()
 
     cv.destroyAllWindows()

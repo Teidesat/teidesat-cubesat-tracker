@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """ Module docstring """  # ToDo: redact docstring
 
-from time import time
+from time import perf_counter
 
 import numpy as np
 
@@ -13,12 +13,12 @@ def time_it(func):
     def wrapper(*args, **kwargs):
         """ Returned function with the time tracking added. """
 
-        start_time = time()
+        start_time = perf_counter()
         data = func(*args, **kwargs)
-        end_time = time()
+        end_time = perf_counter()
 
         print(f"  {func.__name__} took {end_time - start_time:.10f} seconds",
-              end="\r")
+              end="\n")
         return data
 
     return wrapper
