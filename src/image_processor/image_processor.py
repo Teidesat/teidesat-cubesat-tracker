@@ -29,16 +29,14 @@ def prune_close_points(indices: list[tuple[int, int]],
     duplicate reference to the same element of an image. """
 
     pruned = []
-    for i, (y1_coord, x1_coord) in enumerate(indices):
+    for i, point_1 in enumerate(indices):
         duplicate = False
-        for y2_coord, x2_coord in indices[i + 1:]:
-            distance_between_current_points = (abs(y1_coord - y2_coord) +
-                                               abs(x1_coord - x2_coord))
-            if distance_between_current_points < min_distance:
+        for point_2 in indices[i + 1:]:
+            if dist(point_1, point_2) < min_distance:
                 duplicate = True
                 break
         if not duplicate:
-            pruned.append((y1_coord, x1_coord))
+            pruned.append(point_1)
     return pruned
 
 
