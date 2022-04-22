@@ -311,10 +311,8 @@ def detect_blinking_star(detected_stars: dict,
     """ Function to detect which one of the found stars is blinking the closest
     to the desired frequency. """
 
-    blinking_star = None
-    if len(detected_stars) > 0:
-        blinking_star = min(detected_stars.items(),
-                            key=lambda star: abs(star[1]["blinking_freq"] -
-                                                 desired_blinking_freq))
-
-    return blinking_star
+    return min(
+        detected_stars.items(),
+        key=lambda star: abs(star[1]["blinking_freq"] - desired_blinking_freq),
+        default=None,
+    )
