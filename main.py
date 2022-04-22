@@ -38,7 +38,7 @@ import cv2 as cv
 import numpy as np
 
 from src.catalog.star_catalog import StarCatalog
-from src.image_processor.image_processor import (find_stars,
+from src.image_processor.image_processor import (find_stars, star_tracker,
                                                  detect_blinking_star)
 from src.image_processor.star_descriptor import StarDescriptor
 from src.utils import time_it, Distance
@@ -65,7 +65,8 @@ pairs = []
 
 #* Decorator
 if CHECKING_FRAME_VELOCITY:
-    # find_stars = time_it(find_stars)
+    find_stars = time_it(find_stars)
+    star_tracker = time_it(star_tracker)
     detect_blinking_star = time_it(detect_blinking_star)
 
 
@@ -186,12 +187,6 @@ def blinking_star_test(desired_blinking_freq=30):
             str(Path("./data/images/stellarium-005.png")),
             str(Path("./data/images/stellarium-006.png")),
         ]
-        # video_frame_paths = [
-        #     str(Path("./data/images/stellarium-007.png")),
-        #     str(Path("./data/images/stellarium-008.png")),
-        #     str(Path("./data/images/stellarium-009.png")),
-        #     str(Path("./data/images/stellarium-010.png")),
-        # ]
 
         video_frames = []
         for frame_path in video_frame_paths:
@@ -225,9 +220,10 @@ def blinking_star_test(desired_blinking_freq=30):
                                     DISTANCE, BEST_ALGORITHM_INDEX)
         processed_frames += 1
 
-        blinking_star, detected_stars = detect_blinking_star(
-            star_positions, detected_stars, processed_frames,
-            desired_blinking_freq, fps)
+        detected_stars = star_tracker(star_positions, detected_stars,
+                                      processed_frames, fps)
+        blinking_star = detect_blinking_star(detected_stars,
+                                             desired_blinking_freq)
 
         if not CHECKING_VIDEO_VELOCITY:
             show_frame = frame.copy()

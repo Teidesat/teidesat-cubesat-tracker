@@ -250,12 +250,9 @@ def opencv_fast(image, threshold: float, px_sensitivity: int, fast: bool,
     return points
 
 
-def detect_blinking_star(star_positions: list[tuple[int, int]],
-                         detected_stars: dict, processed_frames: int,
-                         desired_blinking_freq: float,
-                         fps: float) -> tuple[tuple[int, int], dict]:
-    """ Function to detect which one of the found stars is blinking the closest
-    to the desired frequency. """
+def star_tracker(star_positions: list[tuple[int, int]], detected_stars: dict,
+                 processed_frames: int, fps: float) -> dict:
+    """ Function to keep track of the detected stars maintaining it's data. """
 
     for old_star_pos, star_info in detected_stars.copy().items():
         equivalent_star = None
@@ -306,10 +303,18 @@ def detect_blinking_star(star_positions: list[tuple[int, int]],
                 "blinking_freq": fps,
             }))
 
+    return detected_stars
+
+
+def detect_blinking_star(detected_stars: dict,
+                         desired_blinking_freq: float) -> tuple[int, int]:
+    """ Function to detect which one of the found stars is blinking the closest
+    to the desired frequency. """
+
     blinking_star = None
     if len(detected_stars) > 0:
         blinking_star = min(detected_stars.items(),
                             key=lambda star: abs(star[1]["blinking_freq"] -
                                                  desired_blinking_freq))
 
-    return blinking_star, detected_stars
+    return blinking_star
