@@ -51,7 +51,7 @@ DISTANCE = 20
 BEST_ALGORITHM_INDEX = 8
 
 PATH_FRAME = Path("./data/frames/video1/frame2000.jpg")
-PATH_VIDEO = Path("./data/videos/video1.mp4")
+PATH_VIDEO = Path("./data/videos/video2.mp4")
 PATH_CATALOG = Path("./data/catalog/hygdata_v3.csv")
 
 CHECKING_VIDEO_VELOCITY = False
