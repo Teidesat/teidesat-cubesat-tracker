@@ -21,7 +21,7 @@ remove_star = False
 
 
 def get_click_location(event, x_coord, y_coord, flags, param):
-    """ Mouse callback function. """
+    """ Mouse callback function to get the mouse location when clicked. """
 
     global click_location, remove_star
 
@@ -31,7 +31,7 @@ def get_click_location(event, x_coord, y_coord, flags, param):
 
 
 def get_avg_color(frame, radius):
-    """ Function to get the average surrounding color of a pixel. """
+    """ Function to get the average surrounding color of the selected pixel. """
 
     global click_location
 
@@ -46,39 +46,44 @@ def get_avg_color(frame, radius):
 
 
 def make_a_star_blink(input_video_path: Path, output_video_path: Path):
-    """ Function to make a star blink by removing it from some frames. """
+    """ Function to make a star blink by removing it from alternate frames. """
 
     global click_location, remove_star
 
     vidcap = cv.VideoCapture(str(input_video_path))
     if not vidcap.isOpened():
-        sys.exit("Error: Unable to open camera.")
+        sys.exit("Error: Unable to open video.")
 
-    width = vidcap.get(cv.CAP_PROP_FRAME_WIDTH)
-    height = vidcap.get(cv.CAP_PROP_FRAME_HEIGHT)
-    fps = vidcap.get(cv.CAP_PROP_FPS)
-    frame_count = vidcap.get(cv.CAP_PROP_FRAME_COUNT)
-    print(width, height, fps, frame_count)
+    width = int(vidcap.get(cv.CAP_PROP_FRAME_WIDTH))
+    height = int(vidcap.get(cv.CAP_PROP_FRAME_HEIGHT))
+    fps = int(vidcap.get(cv.CAP_PROP_FPS))
+    frame_count = int(vidcap.get(cv.CAP_PROP_FRAME_COUNT))
 
-    desired_blinking_freq = fps / 2
+    print(f"\nVideo format: {width}x{height} px - {fps} fps")
+    print("Number of frames:", frame_count)
+
+    codec = cv.VideoWriter_fourcc(*'mp4v')
+    video = cv.VideoWriter(str(output_video_path), codec, fps, (width, height))
+
+    desired_blinking_freq = int(input("\nDesired blinking frequency: "))
+    if desired_blinking_freq > fps:
+        sys.exit("Frequency can't be greater than video fps.")
     frames_to_skip = fps / desired_blinking_freq
-
-    fourcc = cv.VideoWriter_fourcc(*'mp4v')
-    video = cv.VideoWriter(str(output_video_path), fourcc, fps,
-                           (int(width), int(height)))
 
     cv.namedWindow("frame")
     cv.setMouseCallback("frame", get_click_location)
 
+    print("\nClick on the star you want to remove\n")
+
     processed_frames = 0
     success, frame = vidcap.read()
     while success:
-        if processed_frames % frames_to_skip == 0:
+        print("Current frame:", processed_frames, end="\r")
+        if processed_frames % frames_to_skip != 0:
             video.write(frame)
 
             success, frame = vidcap.read()
             processed_frames += 1
-            print(processed_frames)
 
         else:
             cv.imshow("frame", frame)
@@ -98,10 +103,12 @@ def make_a_star_blink(input_video_path: Path, output_video_path: Path):
 
                 success, frame = vidcap.read()
                 processed_frames += 1
-                print(processed_frames)
 
         if cv.waitKey(1) == ord('q'):
             break
+
+    cv.destroyAllWindows()
+    print(f"Video saved on '{str(output_video_path)}'")
 
 
 if __name__ == "__main__":

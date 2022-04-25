@@ -22,7 +22,7 @@ def store_frames(video_path: Path, output_dir: Path):
 
     vidcap = cv.VideoCapture(str(video_path))
     if not vidcap.isOpened():
-        sys.exit("Error: Unable to open camera.")
+        sys.exit("Error: Unable to open video.")
 
     count = 0
     success, image = vidcap.read()
