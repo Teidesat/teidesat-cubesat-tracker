@@ -26,12 +26,11 @@ __deprecated__ = False
 # __license__ = "GPLv3"
 __maintainer__ = "Sergio Tabares Hernández"
 __status__ = "Production"
-__version__ = "0.0.2"
-
-import sys
+__version__ = "0.0.3"
 
 from collections import defaultdict
 from pathlib import Path
+import sys
 from time import perf_counter
 
 import cv2 as cv
@@ -44,7 +43,7 @@ from src.image_processor.star_descriptor import StarDescriptor
 from src.utils import time_it, Distance
 
 #* Constants
-THRESHOLD = 40
+THRESHOLD = 50
 PX_SENSITIVITY = 8
 FAST = True
 DISTANCE = 20
@@ -157,12 +156,11 @@ def video_test(
 
         success, image = vidcap.read()
 
-    print("                                                        ", end="\r")
     if CHECKING_VIDEO_VELOCITY:
         processing_time = perf_counter() - start_time
 
         if CHECKING_FRAME_VELOCITY:
-            print("  *Video process time could not be real",
+            print("\n  *Video process time could not be real",
                   "if also checking frame process time.*")
 
         print("  Processed frames:", processed_frames)
@@ -176,7 +174,12 @@ def video_test(
 def blinking_star_test(desired_blinking_freq=30):
     """ Function to test the detection of the blinking star. """
 
-    fps = 60  #? how do I know this value in real time?
+    fps = 60
+    #? how do I know this value in real time?
+    # if source_from_video:
+    #     fps = vidcap.get(cv.CAP_PROP_FPS)
+    # elif source_from_camera:
+    #     fps = vidcap.get(cv.CAP_PROP_FPS) # maybe works but maybe not
 
     mini_test = False
     if mini_test:
@@ -219,8 +222,7 @@ def blinking_star_test(desired_blinking_freq=30):
                                     DISTANCE, BEST_ALGORITHM_INDEX)
         processed_frames += 1
 
-        detected_stars = star_tracker(star_positions, detected_stars,
-                                      processed_frames, fps)
+        detected_stars = star_tracker(star_positions, detected_stars, fps)
         blinking_star = detect_blinking_star(detected_stars,
                                              desired_blinking_freq)
 
@@ -240,12 +242,11 @@ def blinking_star_test(desired_blinking_freq=30):
             if cv.waitKey(1) == ord('q'):
                 break
 
-    print("                                                        ", end="\r")
     if CHECKING_VIDEO_VELOCITY:
         processing_time = perf_counter() - start_time
 
         if CHECKING_FRAME_VELOCITY:
-            print("  *Video process time could not be real",
+            print("\n  *Video process time could not be real",
                   "if also checking frame process time.*")
 
         print("  Processed frames:", processed_frames)

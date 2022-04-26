@@ -17,7 +17,7 @@ PX_SENSITIVITY = 8
 FAST = True
 DISTANCE = 20
 BEST_ALGORITHM_INDEX = 8
-DEFAULT_LIFETIME = 20
+DEFAULT_LEFT_LIFETIME = 20
 
 KERNEL_Y = np.array([[1, 2, 1], [0, 0, 0], [-1, -2, -1]])
 KERNEL_X = np.array([[1, 0, -1], [2, 0, -2], [1, 0, -1]])
@@ -249,7 +249,7 @@ def opencv_fast(image, threshold: float, px_sensitivity: int, fast: bool,
 
 
 def star_tracker(star_positions: list[tuple[int, int]], detected_stars: dict,
-                 processed_frames: int, fps: float) -> dict:
+                 fps: float) -> dict:
     """ Function to keep track of the detected stars maintaining it's data. """
 
     for old_star_pos, star_info in detected_stars.copy().items():
@@ -266,30 +266,33 @@ def star_tracker(star_positions: list[tuple[int, int]], detected_stars: dict,
         if equivalent_star is not None:
             star_positions.remove(equivalent_star)
             detected_stars.pop(old_star_pos)
+
+            times_detected = star_info["times_detected"] + 1
+            lifetime = star_info["lifetime"] + 1
+
             detected_stars.update({
                 equivalent_star: {
-                    "times_detected":
-                    star_info["times_detected"] + 1,
-                    "lifetime":
-                    DEFAULT_LIFETIME,
-                    "blinking_freq":
-                    ((star_info["times_detected"] / processed_frames) * fps),
+                    "times_detected": times_detected,
+                    "lifetime": lifetime,
+                    "left_lifetime": DEFAULT_LEFT_LIFETIME,
+                    "blinking_freq": ((times_detected / lifetime) * fps),
                 }
             })
 
         else:
-            if star_info["lifetime"] == 0:
+            if star_info["left_lifetime"] == 0:
                 detected_stars.pop(old_star_pos)
+
             else:
+                times_detected = star_info["times_detected"]
+                lifetime = star_info["lifetime"] + 1
+
                 detected_stars.update({
                     old_star_pos: {
-                        "times_detected":
-                        star_info["times_detected"],
-                        "lifetime":
-                        star_info["lifetime"] - 1,
-                        "blinking_freq":
-                        ((star_info["times_detected"] / processed_frames) *
-                         fps),
+                        "times_detected": times_detected,
+                        "lifetime": lifetime,
+                        "left_lifetime": star_info["left_lifetime"] - 1,
+                        "blinking_freq": ((times_detected / lifetime) * fps),
                     }
                 })
 
@@ -297,15 +300,17 @@ def star_tracker(star_positions: list[tuple[int, int]], detected_stars: dict,
         dict.fromkeys(
             star_positions, {
                 "times_detected": 1,
-                "lifetime": DEFAULT_LIFETIME,
+                "lifetime": 1,
+                "left_lifetime": DEFAULT_LEFT_LIFETIME,
                 "blinking_freq": fps,
             }))
 
     return detected_stars
 
 
-def detect_blinking_star(detected_stars: dict,
-                         desired_blinking_freq: float) -> tuple[int, int]:
+def detect_blinking_star(
+        detected_stars: dict,
+        desired_blinking_freq: float) -> tuple[tuple[int, int], dict]:
     """ Function to detect which one of the found stars is blinking the closest
     to the desired frequency. """
 
