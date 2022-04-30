@@ -11,7 +11,7 @@ from pathlib import Path
 import cv2 as cv
 import numpy as np
 
-INPUT = Path("../data/videos/video1.mp4")
+INPUT = Path("../data/videos/video3.mp4")
 OUTPUT = Path("../data/videos/video_test.mp4")
 
 PX_SENSITIVITY = 10
@@ -79,7 +79,7 @@ def make_a_star_blink(input_video_path: Path, output_video_path: Path):
     success, frame = vidcap.read()
     while success:
         print("Current frame:", processed_frames, end="\r")
-        if processed_frames % frames_to_skip != 0:
+        if processed_frames % frames_to_skip == 0:
             video.write(frame)
 
             success, frame = vidcap.read()
@@ -104,7 +104,15 @@ def make_a_star_blink(input_video_path: Path, output_video_path: Path):
                 success, frame = vidcap.read()
                 processed_frames += 1
 
-        if cv.waitKey(1) == ord('q'):
+        key = cv.waitKey(1)
+
+        if key == ord('s'):
+            video.write(frame)
+
+            success, frame = vidcap.read()
+            processed_frames += 1
+
+        if key == ord('q'):
             break
 
     cv.destroyAllWindows()
