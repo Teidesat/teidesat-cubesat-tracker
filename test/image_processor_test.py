@@ -72,6 +72,7 @@ class DataGettersTestCase(unittest.TestCase):
         """ star_tracker can add a new star. """
 
         fps = 60
+        desired_blinking_freq = 30
         star_positions = [(10, 15)]
         detected_stars = {}
         expected_result = {
@@ -80,41 +81,48 @@ class DataGettersTestCase(unittest.TestCase):
                 "lifetime": 1,
                 "left_lifetime": DEFAULT_LEFT_LIFETIME,
                 "blinking_freq": fps,
+                "tickets_to_be_the_satellite": 0,
             }
         }
 
-        result = star_tracker(star_positions, detected_stars, fps)
+        result = star_tracker(star_positions, detected_stars,
+                              desired_blinking_freq, fps)
         self.assertEqual(result, expected_result)
 
     def test_star_tracker_2(self):
         """ star_tracker can keep track of a moving star. """
 
         fps = 60
+        desired_blinking_freq = 30
         star_positions = [(11, 16)]
         detected_stars = {
             (10, 15): {
                 "times_detected": 1,
-                "lifetime": 1,
+                "lifetime": 3,
                 "left_lifetime": DEFAULT_LEFT_LIFETIME,
                 "blinking_freq": fps,
+                "tickets_to_be_the_satellite": 0,
             }
         }
         expected_result = {
             (11, 16): {
                 "times_detected": 2,
-                "lifetime": 2,
+                "lifetime": 4,
                 "left_lifetime": DEFAULT_LEFT_LIFETIME,
-                "blinking_freq": fps,
+                "blinking_freq": fps / 2,
+                "tickets_to_be_the_satellite": 1,
             }
         }
 
-        result = star_tracker(star_positions, detected_stars, fps)
+        result = star_tracker(star_positions, detected_stars,
+                              desired_blinking_freq, fps)
         self.assertEqual(result, expected_result)
 
     def test_star_tracker_3(self):
         """ star_tracker can remember a hidden star. """
 
         fps = 60
+        desired_blinking_freq = 30
         star_positions = []
         detected_stars = {
             (11, 16): {
@@ -122,6 +130,7 @@ class DataGettersTestCase(unittest.TestCase):
                 "lifetime": 2,
                 "left_lifetime": DEFAULT_LEFT_LIFETIME,
                 "blinking_freq": fps,
+                "tickets_to_be_the_satellite": 0,
             }
         }
         expected_result = {
@@ -130,48 +139,51 @@ class DataGettersTestCase(unittest.TestCase):
                 "lifetime": 3,
                 "left_lifetime": DEFAULT_LEFT_LIFETIME - 1,
                 "blinking_freq": (2 / 3) * fps,
+                "tickets_to_be_the_satellite": -2,
             }
         }
 
-        result = star_tracker(star_positions, detected_stars, fps)
+        result = star_tracker(star_positions, detected_stars,
+                              desired_blinking_freq, fps)
         self.assertEqual(result, expected_result)
 
     def test_star_tracker_4(self):
         """ star_tracker can forget a star not found for a long time. """
 
         fps = 60
+        desired_blinking_freq = 30
         star_positions = []
         detected_stars = {(11, 16): {"left_lifetime": 0}}
         expected_result = {}
 
-        result = star_tracker(star_positions, detected_stars, fps)
+        result = star_tracker(star_positions, detected_stars,
+                              desired_blinking_freq, fps)
         self.assertEqual(result, expected_result)
 
     def test_detect_blinking_star(self):
         """ detect_blinking_star can detect the star that blinks at the desired
         blinking frequency. """
 
-        desired_blinking_freq = 30
         detected_stars = {
             0: {
-                "blinking_freq": 0
+                "tickets_to_be_the_satellite": 6
             },
             1: {
-                "blinking_freq": 15
+                "tickets_to_be_the_satellite": 485
             },
             2: {
-                "blinking_freq": 30
+                "tickets_to_be_the_satellite": 8342
             },
             3: {
-                "blinking_freq": 45
+                "tickets_to_be_the_satellite": 141
             },
             4: {
-                "blinking_freq": 60
+                "tickets_to_be_the_satellite": 48
             }
         }
-        expected_result = (2, {"blinking_freq": 30})
+        expected_result = (2, {"tickets_to_be_the_satellite": 8342})
 
-        result = detect_blinking_star(detected_stars, desired_blinking_freq)
+        result = detect_blinking_star(detected_stars)
         self.assertEqual(result, expected_result)
 
 

@@ -50,11 +50,11 @@ DISTANCE = 20
 BEST_ALGORITHM_INDEX = 8
 
 PATH_FRAME = Path("./data/frames/video1/frame2000.jpg")
-PATH_VIDEO = Path("./data/videos/video2.mp4")
+PATH_VIDEO = Path("./data/videos/video5.mp4")
 PATH_CATALOG = Path("./data/catalog/hygdata_v3.csv")
 
 CHECKING_VIDEO_VELOCITY = False
-CHECKING_FRAME_VELOCITY = True
+CHECKING_FRAME_VELOCITY = False
 
 COLOR_CAMERA = True
 
@@ -232,9 +232,9 @@ def blinking_star_test(desired_blinking_freq=10):
                                     DISTANCE, BEST_ALGORITHM_INDEX)
         processed_frames += 1
 
-        detected_stars = star_tracker(star_positions, detected_stars, fps)
-        blinking_star = detect_blinking_star(detected_stars,
-                                             desired_blinking_freq)
+        detected_stars = star_tracker(star_positions, detected_stars,
+                                      desired_blinking_freq, fps)
+        blinking_star = detect_blinking_star(detected_stars)
 
         if not CHECKING_VIDEO_VELOCITY:
             show_frame = frame.copy()
