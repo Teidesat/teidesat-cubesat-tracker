@@ -142,6 +142,7 @@ def video_test(
         processed_frames = 0
         start_time = perf_counter()
 
+    wait_time = 1
     while success:
         image = process_image(image, algorithm_index=algorithm_index)
 
@@ -150,8 +151,16 @@ def video_test(
         else:
             cv.imshow(str_path_video, image)
 
-            key = cv.waitKey(1)
-            if key == ord('q') or key == ord('s'):
+            key = cv.waitKey(wait_time)
+            if key == ord('z'):
+                wait_time = 1
+            if key == ord('x'):
+                wait_time = 100
+            if key == ord('c'):
+                wait_time = 1000
+            if key == ord('v'):
+                wait_time = 0
+            if key == ord('q'):
                 break
 
         success, image = vidcap.read()
@@ -171,10 +180,10 @@ def video_test(
     cv.destroyAllWindows()
 
 
-def blinking_star_test(desired_blinking_freq=30):
+def blinking_star_test(desired_blinking_freq=10):
     """ Function to test the detection of the blinking star. """
 
-    fps = 60
+    fps = 30
     #? how do I know this value in real time?
     # if source_from_video:
     #     fps = vidcap.get(cv.CAP_PROP_FPS)
@@ -207,6 +216,7 @@ def blinking_star_test(desired_blinking_freq=30):
 
     processed_frames = 0
     detected_stars = {}
+    wait_time = 1
 
     while True:
         if mini_test:
@@ -228,18 +238,35 @@ def blinking_star_test(desired_blinking_freq=30):
 
         if not CHECKING_VIDEO_VELOCITY:
             show_frame = frame.copy()
+            for star in star_positions:
+                cv.circle(
+                    show_frame,
+                    center=(int(star[0]), int(star[1])),
+                    radius=PX_SENSITIVITY,
+                    color=(0, 0, 100),
+                    thickness=1,
+                )
             if blinking_star is not None:
                 cv.circle(
                     show_frame,
                     center=(int(blinking_star[0][0]),
                             int(blinking_star[0][1])),
                     radius=PX_SENSITIVITY,
-                    color=(0, 0, 100),
+                    color=(0, 200, 0),
                     thickness=1,
                 )
             cv.imshow("blinking star", show_frame)
 
-            if cv.waitKey(1) == ord('q'):
+            key = cv.waitKey(wait_time)
+            if key == ord('z'):
+                wait_time = 1
+            if key == ord('x'):
+                wait_time = 100
+            if key == ord('c'):
+                wait_time = 1000
+            if key == ord('v'):
+                wait_time = 0
+            if key == ord('q'):
                 break
 
     if CHECKING_VIDEO_VELOCITY:

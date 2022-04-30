@@ -248,9 +248,11 @@ def opencv_fast(image, threshold: float, px_sensitivity: int, fast: bool,
     return points
 
 
-def star_tracker(star_positions: list[tuple[int, int]], detected_stars: dict,
+def star_tracker(star_positions_: list[tuple[int, int]], detected_stars_: dict,
                  fps: float) -> dict:
     """ Function to keep track of the detected stars maintaining it's data. """
+    star_positions = star_positions_.copy()
+    detected_stars = detected_stars_.copy()
 
     for old_star_pos, star_info in detected_stars.copy().items():
         equivalent_star = None
