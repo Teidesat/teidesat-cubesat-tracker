@@ -49,6 +49,8 @@ FAST = True
 DISTANCE = 20
 BEST_ALGORITHM_INDEX = 8
 
+SAT_DESIRED_BLINKING_FREQ = 10
+
 PATH_FRAME = Path("./data/frames/video1/frame2000.jpg")
 PATH_VIDEO = Path("./data/videos/video5.mp4")
 PATH_CATALOG = Path("./data/catalog/hygdata_v3.csv")
@@ -81,7 +83,7 @@ def main():
     #     print(f"Video test {index}...")
     #     video_test(algorithm_index=index)
 
-    blinking_star_test()
+    blinking_star_test(SAT_DESIRED_BLINKING_FREQ)
 
     # identify_test()
 
@@ -216,6 +218,7 @@ def blinking_star_test(desired_blinking_freq=10):
 
     processed_frames = 0
     detected_stars = {}
+    next_star_id = 0
     wait_time = 1
 
     while True:
@@ -232,8 +235,11 @@ def blinking_star_test(desired_blinking_freq=10):
                                     DISTANCE, BEST_ALGORITHM_INDEX)
         processed_frames += 1
 
-        detected_stars = star_tracker(star_positions, detected_stars,
-                                      desired_blinking_freq, fps)
+        detected_stars, next_star_id = star_tracker(star_positions,
+                                                    detected_stars,
+                                                    desired_blinking_freq, fps,
+                                                    next_star_id)
+
         blinking_star = detect_blinking_star(detected_stars)
 
         if not CHECKING_VIDEO_VELOCITY:
@@ -249,8 +255,8 @@ def blinking_star_test(desired_blinking_freq=10):
             if blinking_star is not None:
                 cv.circle(
                     show_frame,
-                    center=(int(blinking_star[0][0]),
-                            int(blinking_star[0][1])),
+                    center=(int(blinking_star[1]["position"][0]),
+                            int(blinking_star[1]["position"][1])),
                     radius=PX_SENSITIVITY,
                     color=(0, 200, 0),
                     thickness=1,

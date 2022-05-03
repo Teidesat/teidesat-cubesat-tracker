@@ -250,17 +250,20 @@ def opencv_fast(image, threshold: float, px_sensitivity: int, fast: bool,
     return points
 
 
-def star_tracker(star_positions_: list[tuple[int, int]], detected_stars_: dict,
-                 desired_blinking_freq: float, fps: float) -> dict:
+def star_tracker(star_positions_: list[tuple[int, int]],
+                 detected_stars_: dict[int, dict],
+                 desired_blinking_freq: float = 30,
+                 fps: float = 60,
+                 next_star_id: int = 0) -> dict[int, dict]:
     """ Function to keep track of the detected stars maintaining it's data. """
     star_positions = star_positions_.copy()
     detected_stars = detected_stars_.copy()
 
-    for old_star_pos, star_info in detected_stars.copy().items():
+    for old_star_id, star_info in detected_stars.copy().items():
         equivalent_star = None
         best_candidate_dist = inf
         for new_star_pos in star_positions:
-            current_pair_dist = dist(old_star_pos, new_star_pos)
+            current_pair_dist = dist(star_info["position"], new_star_pos)
 
             if (current_pair_dist < DISTANCE
                     and best_candidate_dist > current_pair_dist):
@@ -269,7 +272,6 @@ def star_tracker(star_positions_: list[tuple[int, int]], detected_stars_: dict,
 
         if equivalent_star is not None:
             star_positions.remove(equivalent_star)
-            detected_stars.pop(old_star_pos)
 
             times_detected = star_info["times_detected"] + 1
             lifetime = star_info["lifetime"] + 1
@@ -282,7 +284,8 @@ def star_tracker(star_positions_: list[tuple[int, int]], detected_stars_: dict,
                 ttbts -= 2
 
             detected_stars.update({
-                equivalent_star: {
+                old_star_id: {
+                    "position": equivalent_star,
                     "times_detected": times_detected,
                     "lifetime": lifetime,
                     "left_lifetime": DEFAULT_LEFT_LIFETIME,
@@ -293,7 +296,7 @@ def star_tracker(star_positions_: list[tuple[int, int]], detected_stars_: dict,
 
         else:
             if star_info["left_lifetime"] == 0:
-                detected_stars.pop(old_star_pos)
+                detected_stars.pop(old_star_id)
 
             else:
                 times_detected = star_info["times_detected"]
@@ -307,7 +310,8 @@ def star_tracker(star_positions_: list[tuple[int, int]], detected_stars_: dict,
                     ttbts -= 2
 
                 detected_stars.update({
-                    old_star_pos: {
+                    old_star_id: {
+                        "position": star_info["position"],
                         "times_detected": times_detected,
                         "lifetime": lifetime,
                         "left_lifetime": star_info["left_lifetime"] - 1,
@@ -316,20 +320,26 @@ def star_tracker(star_positions_: list[tuple[int, int]], detected_stars_: dict,
                     }
                 })
 
-    detected_stars.update(
-        dict.fromkeys(
-            star_positions, {
+    stop_range_id = next_star_id + len(star_positions)
+    star_ids = range(next_star_id, stop_range_id)
+
+    for star_id, star_position in zip(star_ids, star_positions):
+        detected_stars.update({
+            star_id: {
+                "position": star_position,
                 "times_detected": 1,
                 "lifetime": 1,
                 "left_lifetime": DEFAULT_LEFT_LIFETIME,
                 "blinking_freq": fps,
                 "tickets_to_be_the_satellite": 0,
-            }))
+            }
+        })
 
-    return detected_stars
+    return detected_stars, stop_range_id
 
 
-def detect_blinking_star(detected_stars: dict) -> tuple[tuple[int, int], dict]:
+def detect_blinking_star(
+        detected_stars: dict[int, dict]) -> tuple[tuple[int, int], dict]:
     """ Function to detect which one of the found stars is blinking the closest
     to the desired frequency. """
 
