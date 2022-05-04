@@ -167,7 +167,7 @@ class DataGettersTestCase(unittest.TestCase):
         fps = 60
         desired_blinking_freq = 30
         star_positions = []
-        detected_stars = {0: {"left_lifetime": 0}}
+        detected_stars = {0: {"position": (11, 16), "left_lifetime": 0}}
         expected_result = ({}, 1)
 
         result = star_tracker(star_positions,

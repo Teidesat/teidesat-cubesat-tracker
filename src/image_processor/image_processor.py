@@ -323,18 +323,25 @@ def get_new_star_position(
         old_star_info: tuple[int, int]) -> tuple[int, int] | None:
     """ Function to get the new position of a given star. """
 
-    new_star_pos = None
-    best_candidate_dist = inf
+    old_star_pos = old_star_info["position"]
 
-    for current_star_pos in star_positions:
-        current_pair_dist = dist(old_star_info["position"], current_star_pos)
+    try:
+        star_positions.index(old_star_pos)
+        return old_star_pos
 
-        if (current_pair_dist < DISTANCE
-                and best_candidate_dist > current_pair_dist):
-            best_candidate_dist = current_pair_dist
-            new_star_pos = current_star_pos
+    except ValueError:
+        new_star_pos = None
+        best_candidate_dist = inf
 
-    return new_star_pos
+        for current_star_pos in star_positions:
+            current_pair_dist = dist(old_star_pos, current_star_pos)
+
+            if (current_pair_dist < DISTANCE
+                    and best_candidate_dist > current_pair_dist):
+                best_candidate_dist = current_pair_dist
+                new_star_pos = current_star_pos
+
+        return new_star_pos
 
 
 def add_remaining_stars(star_positions: list[tuple[int, int]],
