@@ -254,30 +254,22 @@ def star_tracker(star_positions_: list[tuple[int, int]],
                  detected_stars_: dict[int, dict],
                  desired_blinking_freq: float = 30,
                  fps: float = 60,
-                 next_star_id: int = 0) -> dict[int, dict]:
+                 next_star_id: int = 0) -> tuple[dict[int, dict], int]:
     """ Function to keep track of the detected stars maintaining it's data. """
     star_positions = star_positions_.copy()
     detected_stars = detected_stars_.copy()
 
-    for old_star_id, star_info in detected_stars.copy().items():
-        equivalent_star = None
-        best_candidate_dist = inf
-        for new_star_pos in star_positions:
-            current_pair_dist = dist(star_info["position"], new_star_pos)
+    for old_star_id, old_star_info in detected_stars.copy().items():
+        new_star_pos = get_new_star_position(star_positions, old_star_info)
 
-            if (current_pair_dist < DISTANCE
-                    and best_candidate_dist > current_pair_dist):
-                best_candidate_dist = current_pair_dist
-                equivalent_star = new_star_pos
+        if new_star_pos is not None:
+            star_positions.remove(new_star_pos)
 
-        if equivalent_star is not None:
-            star_positions.remove(equivalent_star)
-
-            times_detected = star_info["times_detected"] + 1
-            lifetime = star_info["lifetime"] + 1
+            times_detected = old_star_info["times_detected"] + 1
+            lifetime = old_star_info["lifetime"] + 1
             blinking_freq = ((times_detected / lifetime) * fps)
 
-            ttbts = star_info["tickets_to_be_the_satellite"]
+            ttbts = old_star_info["tickets_to_be_the_satellite"]
             if abs(blinking_freq - desired_blinking_freq) < FREQ_THRESHOLD:
                 ttbts += 1
             else:
@@ -285,7 +277,7 @@ def star_tracker(star_positions_: list[tuple[int, int]],
 
             detected_stars.update({
                 old_star_id: {
-                    "position": equivalent_star,
+                    "position": new_star_pos,
                     "times_detected": times_detected,
                     "lifetime": lifetime,
                     "left_lifetime": DEFAULT_LEFT_LIFETIME,
@@ -295,15 +287,15 @@ def star_tracker(star_positions_: list[tuple[int, int]],
             })
 
         else:
-            if star_info["left_lifetime"] == 0:
+            if old_star_info["left_lifetime"] == 0:
                 detected_stars.pop(old_star_id)
 
             else:
-                times_detected = star_info["times_detected"]
-                lifetime = star_info["lifetime"] + 1
+                times_detected = old_star_info["times_detected"]
+                lifetime = old_star_info["lifetime"] + 1
                 blinking_freq = ((times_detected / lifetime) * fps)
 
-                ttbts = star_info["tickets_to_be_the_satellite"]
+                ttbts = old_star_info["tickets_to_be_the_satellite"]
                 if abs(blinking_freq - desired_blinking_freq) < FREQ_THRESHOLD:
                     ttbts += 1
                 else:
@@ -311,14 +303,44 @@ def star_tracker(star_positions_: list[tuple[int, int]],
 
                 detected_stars.update({
                     old_star_id: {
-                        "position": star_info["position"],
+                        "position": old_star_info["position"],
                         "times_detected": times_detected,
                         "lifetime": lifetime,
-                        "left_lifetime": star_info["left_lifetime"] - 1,
+                        "left_lifetime": old_star_info["left_lifetime"] - 1,
                         "blinking_freq": blinking_freq,
                         "tickets_to_be_the_satellite": ttbts,
                     }
                 })
+
+    detected_stars, stop_range_id = add_remaining_stars(
+        star_positions, detected_stars, fps, next_star_id)
+
+    return detected_stars, stop_range_id
+
+
+def get_new_star_position(
+        star_positions: list[tuple[int, int]],
+        old_star_info: tuple[int, int]) -> tuple[int, int] | None:
+    """ Function to get the new position of a given star. """
+
+    new_star_pos = None
+    best_candidate_dist = inf
+
+    for current_star_pos in star_positions:
+        current_pair_dist = dist(old_star_info["position"], current_star_pos)
+
+        if (current_pair_dist < DISTANCE
+                and best_candidate_dist > current_pair_dist):
+            best_candidate_dist = current_pair_dist
+            new_star_pos = current_star_pos
+
+    return new_star_pos
+
+
+def add_remaining_stars(star_positions: list[tuple[int, int]],
+                        detected_stars: dict[int, dict], fps: float,
+                        next_star_id: int) -> tuple[dict[int, dict], int]:
+    """ Function to add the remaining stars as new ones into de stars dict. """
 
     stop_range_id = next_star_id + len(star_positions)
     star_ids = range(next_star_id, stop_range_id)
@@ -339,7 +361,7 @@ def star_tracker(star_positions_: list[tuple[int, int]],
 
 
 def detect_blinking_star(
-        detected_stars: dict[int, dict]) -> tuple[tuple[int, int], dict]:
+        detected_stars: dict[int, dict]) -> tuple[int, dict] | None:
     """ Function to detect which one of the found stars is blinking the closest
     to the desired frequency. """
 
