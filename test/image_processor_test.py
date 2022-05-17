@@ -8,6 +8,7 @@ This program tests the correct functionality of the functions at
 from pathlib import Path
 import sys
 import unittest
+import random
 
 import cv2 as cv
 
@@ -16,6 +17,8 @@ from src.image_processor.image_processor import (DEFAULT_LEFT_LIFETIME,
                                                  prune_close_points,
                                                  star_tracker,
                                                  detect_blinking_star)
+
+random.seed(1)
 
 
 class DataGettersTestCase(unittest.TestCase):
@@ -83,6 +86,7 @@ class DataGettersTestCase(unittest.TestCase):
                 "left_lifetime": DEFAULT_LEFT_LIFETIME,
                 "blinking_freq": fps,
                 "tickets_to_be_the_satellite": 0,
+                "color": [255, 205.57729349197388, 0.0],
             }
         }, 1)
 
@@ -107,6 +111,7 @@ class DataGettersTestCase(unittest.TestCase):
                 "left_lifetime": DEFAULT_LEFT_LIFETIME,
                 "blinking_freq": fps,
                 "tickets_to_be_the_satellite": 0,
+                "color": [],
             }
         }
         expected_result = ({
@@ -117,6 +122,7 @@ class DataGettersTestCase(unittest.TestCase):
                 "left_lifetime": DEFAULT_LEFT_LIFETIME,
                 "blinking_freq": fps / 2,
                 "tickets_to_be_the_satellite": 1,
+                "color": [],
             }
         }, 1)
 
@@ -141,6 +147,7 @@ class DataGettersTestCase(unittest.TestCase):
                 "left_lifetime": DEFAULT_LEFT_LIFETIME,
                 "blinking_freq": fps,
                 "tickets_to_be_the_satellite": 0,
+                "color": [],
             }
         }
         expected_result = ({
@@ -151,6 +158,7 @@ class DataGettersTestCase(unittest.TestCase):
                 "left_lifetime": DEFAULT_LEFT_LIFETIME - 1,
                 "blinking_freq": (2 / 3) * fps,
                 "tickets_to_be_the_satellite": -2,
+                "color": [],
             }
         }, 1)
 

@@ -231,11 +231,12 @@ def blinking_star_test(desired_blinking_freq=10):
 
         if COLOR_CAMERA:
             gray = cv.cvtColor(frame, cv.COLOR_RGB2GRAY)
-        star_positions = find_stars(gray, THRESHOLD, PX_SENSITIVITY, FAST,
-                                    DISTANCE, BEST_ALGORITHM_INDEX)
         processed_frames += 1
 
-        detected_stars, next_star_id = star_tracker(star_positions,
+        new_star_positions = find_stars(gray, THRESHOLD, PX_SENSITIVITY, FAST,
+                                        DISTANCE, BEST_ALGORITHM_INDEX)
+
+        detected_stars, next_star_id = star_tracker(new_star_positions,
                                                     detected_stars,
                                                     desired_blinking_freq, fps,
                                                     next_star_id)
@@ -244,14 +245,18 @@ def blinking_star_test(desired_blinking_freq=10):
 
         if not CHECKING_VIDEO_VELOCITY:
             show_frame = frame.copy()
-            for star in star_positions:
+
+            for star in detected_stars.values():
                 cv.circle(
                     show_frame,
-                    center=(int(star[0]), int(star[1])),
+                    center=(int(star["position"][0]),
+                            int(star["position"][1])),
                     radius=PX_SENSITIVITY,
-                    color=(0, 0, 100),
+                    # color=(0, 0, 100),
+                    color=star["color"],
                     thickness=1,
                 )
+
             if blinking_star is not None:
                 cv.circle(
                     show_frame,
@@ -261,6 +266,8 @@ def blinking_star_test(desired_blinking_freq=10):
                     color=(0, 200, 0),
                     thickness=1,
                 )
+
+            cv.namedWindow("blinking star", cv.WINDOW_NORMAL)
             cv.imshow("blinking star", show_frame)
 
             key = cv.waitKey(wait_time)
@@ -285,7 +292,7 @@ def blinking_star_test(desired_blinking_freq=10):
         print("  Processed frames:", processed_frames)
         print("  Time needed:", processing_time)
         print("  FPS:", processed_frames / processing_time)
-    print()
+        print()
 
     cv.destroyAllWindows()
 

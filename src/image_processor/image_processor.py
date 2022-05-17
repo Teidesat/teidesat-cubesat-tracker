@@ -5,7 +5,10 @@ File with the implementation of the image processing functions and star
 detection algorithms.
 """
 
+from colorsys import hsv_to_rgb
 from math import inf, dist
+import random
+from time import time
 
 import cv2 as cv
 import numpy as np
@@ -23,6 +26,8 @@ FREQ_THRESHOLD = 3
 
 KERNEL_Y = np.array([[1, 2, 1], [0, 0, 0], [-1, -2, -1]])
 KERNEL_X = np.array([[1, 0, -1], [2, 0, -2], [1, 0, -1]])
+
+random.seed(time())
 
 
 def prune_close_points(indices: list[tuple[int, int]],
@@ -345,6 +350,7 @@ def add_remaining_stars(star_positions: list[tuple[int, int]],
                 "left_lifetime": DEFAULT_LEFT_LIFETIME,
                 "blinking_freq": fps,
                 "tickets_to_be_the_satellite": 0,
+                "color": [v * 255 for v in hsv_to_rgb(random.random(), 1, 1)],
             }
         })
 
