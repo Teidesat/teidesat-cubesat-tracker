@@ -85,7 +85,7 @@ class DataGettersTestCase(unittest.TestCase):
                 "lifetime": 1,
                 "left_lifetime": DEFAULT_LEFT_LIFETIME,
                 "blinking_freq": fps,
-                "tickets_to_be_the_satellite": 0,
+                "detection_confidence": 0,
                 "movement_vector": (0, 0),
                 "color": [255, 205.57729349197388, 0.0],
             }
@@ -111,7 +111,7 @@ class DataGettersTestCase(unittest.TestCase):
                 "lifetime": 3,
                 "left_lifetime": DEFAULT_LEFT_LIFETIME,
                 "blinking_freq": fps / 3,
-                "tickets_to_be_the_satellite": 0,
+                "detection_confidence": 0,
                 "movement_vector": (0, 0),
                 "color": [],
             }
@@ -123,7 +123,7 @@ class DataGettersTestCase(unittest.TestCase):
                 "lifetime": 4,
                 "left_lifetime": DEFAULT_LEFT_LIFETIME,
                 "blinking_freq": fps / 2,
-                "tickets_to_be_the_satellite": 1,
+                "detection_confidence": 1,
                 "movement_vector": (0, 0),
                 "color": [],
             }
@@ -149,7 +149,7 @@ class DataGettersTestCase(unittest.TestCase):
                 "lifetime": 2,
                 "left_lifetime": DEFAULT_LEFT_LIFETIME,
                 "blinking_freq": fps,
-                "tickets_to_be_the_satellite": 0,
+                "detection_confidence": 0,
                 "movement_vector": (0, 0),
                 "color": [],
             }
@@ -161,7 +161,7 @@ class DataGettersTestCase(unittest.TestCase):
                 "lifetime": 3,
                 "left_lifetime": DEFAULT_LEFT_LIFETIME - 1,
                 "blinking_freq": (2 / 3) * fps,
-                "tickets_to_be_the_satellite": -2,
+                "detection_confidence": -2,
                 "movement_vector": (0, 0),
                 "color": [],
             }
@@ -202,22 +202,22 @@ class DataGettersTestCase(unittest.TestCase):
 
         detected_stars = {
             0: {
-                "tickets_to_be_the_satellite": 6
+                "detection_confidence": 6
             },
             1: {
-                "tickets_to_be_the_satellite": 485
+                "detection_confidence": 485
             },
             2: {
-                "tickets_to_be_the_satellite": 8342
+                "detection_confidence": 8342
             },
             3: {
-                "tickets_to_be_the_satellite": 141
+                "detection_confidence": 141
             },
             4: {
-                "tickets_to_be_the_satellite": 48
+                "detection_confidence": 48
             }
         }
-        expected_result = (2, {"tickets_to_be_the_satellite": 8342})
+        expected_result = (2, {"detection_confidence": 8342})
 
         result = detect_blinking_star(detected_stars)
         self.assertEqual(result, expected_result)

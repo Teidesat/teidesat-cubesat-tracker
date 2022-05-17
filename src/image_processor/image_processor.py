@@ -31,7 +31,8 @@ REMOVE_OUTLIERS = True
 MAX_OUTLIER_THRESHOLD = 1.5
 MAX_MOVE_DISTANCE = 10
 
-FREQ_THRESHOLD = 3
+FREQUENCY_THRESHOLD = 3
+MIN_DETECTION_CONFIDENCE = 20
 
 KERNEL_Y = np.array([[1, 2, 1], [0, 0, 0], [-1, -2, -1]])
 KERNEL_X = np.array([[1, 0, -1], [2, 0, -2], [1, 0, -1]])
@@ -300,11 +301,11 @@ def star_tracker(star_positions_: list[tuple[int, int]],
         blinking_freq = fps * (sum(last_times_detected) /
                                len(last_times_detected))
 
-        ttbts = old_star_info["tickets_to_be_the_satellite"]
-        if abs(blinking_freq - desired_blinking_freq) < FREQ_THRESHOLD:
-            ttbts += 1
+        detection_confidence = old_star_info["detection_confidence"]
+        if abs(blinking_freq - desired_blinking_freq) < FREQUENCY_THRESHOLD:
+            detection_confidence += 1
         else:
-            ttbts -= 2
+            detection_confidence -= 2
 
         detected_stars[old_star_id].update({
             "last_positions": last_positions,
@@ -312,7 +313,7 @@ def star_tracker(star_positions_: list[tuple[int, int]],
             "lifetime": lifetime,
             "left_lifetime": left_lifetime,
             "blinking_freq": blinking_freq,
-            "tickets_to_be_the_satellite": ttbts,
+            "detection_confidence": detection_confidence,
             "movement_vector": movement_vector,
         })
 
@@ -396,7 +397,7 @@ def add_remaining_stars(star_positions: list[tuple[int, int]],
                 "lifetime": 1,
                 "left_lifetime": DEFAULT_LEFT_LIFETIME,
                 "blinking_freq": fps,
-                "tickets_to_be_the_satellite": 0,
+                "detection_confidence": 0,
                 "movement_vector": DEFAULT_MOVEMENT_VECTOR,
                 "color": [v * 255 for v in hsv_to_rgb(random.random(), 1, 1)],
             }
@@ -410,8 +411,13 @@ def detect_blinking_star(
     """ Function to detect which one of the found stars is blinking the closest
     to the desired frequency. """
 
-    return max(
+    blinking_star = max(
         detected_stars.items(),
-        key=lambda star: star[1]["tickets_to_be_the_satellite"],
+        key=lambda star: star[1]["detection_confidence"],
         default=None,
     )
+
+    if ((blinking_star is not None) and
+        (blinking_star[1]["detection_confidence"] > MIN_DETECTION_CONFIDENCE)):
+        return blinking_star
+    return None
