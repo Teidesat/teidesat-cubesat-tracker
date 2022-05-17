@@ -262,55 +262,39 @@ def star_tracker(star_positions_: list[tuple[int, int]],
     for old_star_id, old_star_info in detected_stars.copy().items():
         new_star_pos = get_new_star_position(star_positions, old_star_info)
 
-        if new_star_pos is not None:
-            star_positions.remove(new_star_pos)
-
-            times_detected = old_star_info["times_detected"] + 1
-            lifetime = old_star_info["lifetime"] + 1
-            blinking_freq = ((times_detected / lifetime) * fps)
-
-            ttbts = old_star_info["tickets_to_be_the_satellite"]
-            if abs(blinking_freq - desired_blinking_freq) < FREQ_THRESHOLD:
-                ttbts += 1
-            else:
-                ttbts -= 2
-
-            detected_stars.update({
-                old_star_id: {
-                    "position": new_star_pos,
-                    "times_detected": times_detected,
-                    "lifetime": lifetime,
-                    "left_lifetime": DEFAULT_LEFT_LIFETIME,
-                    "blinking_freq": blinking_freq,
-                    "tickets_to_be_the_satellite": ttbts,
-                }
-            })
-
-        else:
+        if new_star_pos is None:
             if old_star_info["left_lifetime"] == 0:
                 detected_stars.pop(old_star_id)
+                continue
 
-            else:
-                times_detected = old_star_info["times_detected"]
-                lifetime = old_star_info["lifetime"] + 1
-                blinking_freq = ((times_detected / lifetime) * fps)
+            position = old_star_info["position"]
+            times_detected = old_star_info["times_detected"]
+            left_lifetime = old_star_info["left_lifetime"] - 1
 
-                ttbts = old_star_info["tickets_to_be_the_satellite"]
-                if abs(blinking_freq - desired_blinking_freq) < FREQ_THRESHOLD:
-                    ttbts += 1
-                else:
-                    ttbts -= 2
+        else:
+            star_positions.remove(new_star_pos)
+            position = new_star_pos
 
-                detected_stars.update({
-                    old_star_id: {
-                        "position": old_star_info["position"],
-                        "times_detected": times_detected,
-                        "lifetime": lifetime,
-                        "left_lifetime": old_star_info["left_lifetime"] - 1,
-                        "blinking_freq": blinking_freq,
-                        "tickets_to_be_the_satellite": ttbts,
-                    }
-                })
+            times_detected = old_star_info["times_detected"] + 1
+            left_lifetime = DEFAULT_LEFT_LIFETIME
+
+        lifetime = old_star_info["lifetime"] + 1
+        blinking_freq = ((times_detected / lifetime) * fps)
+
+        ttbts = old_star_info["tickets_to_be_the_satellite"]
+        if abs(blinking_freq - desired_blinking_freq) < FREQ_THRESHOLD:
+            ttbts += 1
+        else:
+            ttbts -= 2
+
+        detected_stars[old_star_id].update({
+            "position": position,
+            "times_detected": times_detected,
+            "lifetime": lifetime,
+            "left_lifetime": left_lifetime,
+            "blinking_freq": blinking_freq,
+            "tickets_to_be_the_satellite": ttbts
+        })
 
     detected_stars, stop_range_id = add_remaining_stars(
         star_positions, detected_stars, fps, next_star_id)
