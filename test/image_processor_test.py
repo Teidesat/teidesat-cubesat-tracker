@@ -81,7 +81,7 @@ class DataGettersTestCase(unittest.TestCase):
         expected_result = ({
             0: {
                 "last_positions": [(10, 15)],
-                "times_detected": 1,
+                "last_times_detected": [1],
                 "lifetime": 1,
                 "left_lifetime": DEFAULT_LEFT_LIFETIME,
                 "blinking_freq": fps,
@@ -107,10 +107,10 @@ class DataGettersTestCase(unittest.TestCase):
         detected_stars = {
             0: {
                 "last_positions": [(10, 15)],
-                "times_detected": 1,
+                "last_times_detected": [1, 0, 0],
                 "lifetime": 3,
                 "left_lifetime": DEFAULT_LEFT_LIFETIME,
-                "blinking_freq": fps,
+                "blinking_freq": fps / 3,
                 "tickets_to_be_the_satellite": 0,
                 "movement_vector": (0, 0),
                 "color": [],
@@ -119,7 +119,7 @@ class DataGettersTestCase(unittest.TestCase):
         expected_result = ({
             0: {
                 "last_positions": [(10, 15), (11, 16)],
-                "times_detected": 2,
+                "last_times_detected": [1, 0, 0, 1],
                 "lifetime": 4,
                 "left_lifetime": DEFAULT_LEFT_LIFETIME,
                 "blinking_freq": fps / 2,
@@ -145,7 +145,7 @@ class DataGettersTestCase(unittest.TestCase):
         detected_stars = {
             0: {
                 "last_positions": [(11, 16)],
-                "times_detected": 2,
+                "last_times_detected": [1, 1],
                 "lifetime": 2,
                 "left_lifetime": DEFAULT_LEFT_LIFETIME,
                 "blinking_freq": fps,
@@ -157,7 +157,7 @@ class DataGettersTestCase(unittest.TestCase):
         expected_result = ({
             0: {
                 "last_positions": [(11, 16)],
-                "times_detected": 2,
+                "last_times_detected": [1, 1, 0],
                 "lifetime": 3,
                 "left_lifetime": DEFAULT_LEFT_LIFETIME - 1,
                 "blinking_freq": (2 / 3) * fps,

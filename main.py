@@ -304,7 +304,7 @@ def blinking_star_test(desired_blinking_freq=10):
         file_path = "./blinking_stars_log.csv"
         with open(file_path, "w", encoding="utf-8-sig") as file:
             print("id;",
-                  "times_detected;",
+                  "last_times_detected;",
                   "lifetime;",
                   "left_lifetime;",
                   "tickets_to_be_the_satellite;",
@@ -315,7 +315,7 @@ def blinking_star_test(desired_blinking_freq=10):
 
             for star in blinking_star_log:
                 print(f"{star[0]};",
-                      f"{star[1]['times_detected']};",
+                      f"{star[1]['last_times_detected']};",
                       f"{star[1]['lifetime']};",
                       f"{star[1]['left_lifetime']};",
                       f"{star[1]['tickets_to_be_the_satellite']};",

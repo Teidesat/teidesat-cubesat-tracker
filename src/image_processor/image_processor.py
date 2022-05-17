@@ -281,21 +281,24 @@ def star_tracker(star_positions_: list[tuple[int, int]],
                 detected_stars.pop(old_star_id)
                 continue
 
-            times_detected = old_star_info["times_detected"]
+            old_star_info["last_times_detected"].append(0)
             left_lifetime = old_star_info["left_lifetime"] - 1
 
         else:
             star_positions.remove(new_star_pos)
             old_star_info["last_positions"].append(new_star_pos)
 
-            times_detected = old_star_info["times_detected"] + 1
+            old_star_info["last_times_detected"].append(1)
             left_lifetime = DEFAULT_LEFT_LIFETIME
 
         last_positions = old_star_info["last_positions"][-MAX_HISTORY_LEN:]
+        last_times_detected = old_star_info["last_times_detected"][
+            -MAX_HISTORY_LEN:]
         movement_vector = get_movement_vector(last_positions)
 
         lifetime = old_star_info["lifetime"] + 1
-        blinking_freq = ((times_detected / lifetime) * fps)
+        blinking_freq = fps * (sum(last_times_detected) /
+                               len(last_times_detected))
 
         ttbts = old_star_info["tickets_to_be_the_satellite"]
         if abs(blinking_freq - desired_blinking_freq) < FREQ_THRESHOLD:
@@ -305,7 +308,7 @@ def star_tracker(star_positions_: list[tuple[int, int]],
 
         detected_stars[old_star_id].update({
             "last_positions": last_positions,
-            "times_detected": times_detected,
+            "last_times_detected": last_times_detected,
             "lifetime": lifetime,
             "left_lifetime": left_lifetime,
             "blinking_freq": blinking_freq,
@@ -389,7 +392,7 @@ def add_remaining_stars(star_positions: list[tuple[int, int]],
         detected_stars.update({
             star_id: {
                 "last_positions": [star_position],
-                "times_detected": 1,
+                "last_times_detected": [1],
                 "lifetime": 1,
                 "left_lifetime": DEFAULT_LEFT_LIFETIME,
                 "blinking_freq": fps,
