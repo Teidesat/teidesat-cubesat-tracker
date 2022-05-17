@@ -39,7 +39,8 @@ import numpy as np
 
 from src.catalog.star_catalog import StarCatalog
 from src.image_processor.image_processor import (find_stars, star_tracker,
-                                                 detect_blinking_star)
+                                                 detect_blinking_star,
+                                                 detect_shooting_stars)
 from src.image_processor.star_descriptor import StarDescriptor
 from src.utils import time_it, Distance
 
@@ -51,6 +52,7 @@ DISTANCE = 20
 BEST_ALGORITHM_INDEX = 8
 
 SAT_DESIRED_BLINKING_FREQ = 10
+MOVEMENT_THRESHOLD = 2
 
 PATH_FRAME = Path("./data/frames/video1/frame2000.jpg")
 PATH_VIDEO = Path("./data/videos/video5.mp4")
@@ -69,6 +71,7 @@ pairs = []
 if CHECKING_FRAME_VELOCITY:
     find_stars = time_it(find_stars)
     star_tracker = time_it(star_tracker)
+    detect_shooting_stars = time_it(detect_shooting_stars)
     detect_blinking_star = time_it(detect_blinking_star)
 
 
@@ -243,7 +246,10 @@ def blinking_star_test(desired_blinking_freq=10):
                                                     desired_blinking_freq, fps,
                                                     next_star_id)
 
-        blinking_star = detect_blinking_star(detected_stars)
+        shooting_stars = detect_shooting_stars(detected_stars,
+                                               MOVEMENT_THRESHOLD)
+
+        blinking_star = detect_blinking_star(shooting_stars)
 
         if not CHECKING_VIDEO_VELOCITY:
             show_frame = frame.copy()
@@ -256,6 +262,16 @@ def blinking_star_test(desired_blinking_freq=10):
                     radius=PX_SENSITIVITY,
                     color=(0, 0, 100),
                     # color=star["color"],
+                    thickness=1,
+                )
+
+            for star in shooting_stars.values():
+                cv.circle(
+                    show_frame,
+                    center=(int(star["last_positions"][-1][0]),
+                            int(star["last_positions"][-1][1])),
+                    radius=PX_SENSITIVITY,
+                    color=(0, 200, 200),
                     thickness=1,
                 )
 

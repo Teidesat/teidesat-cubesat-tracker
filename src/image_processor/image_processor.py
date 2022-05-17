@@ -406,6 +406,18 @@ def add_remaining_stars(star_positions: list[tuple[int, int]],
     return detected_stars, stop_range_id
 
 
+def detect_shooting_stars(detected_stars: dict[int, dict],
+                          movement_threshold: float = 2) -> dict[int, dict]:
+    """ Function to detect which of the found stars are shooting stars or
+    satellites. """
+
+    return dict(
+        filter(
+            lambda star:
+            (np.linalg.norm(star[1]["movement_vector"]) >= movement_threshold),
+            detected_stars.items()))
+
+
 def detect_blinking_star(
         detected_stars: dict[int, dict]) -> tuple[int, dict] | None:
     """ Function to detect which one of the found stars is blinking the closest
