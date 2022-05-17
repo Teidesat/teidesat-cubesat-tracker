@@ -26,9 +26,10 @@ __deprecated__ = False
 # __license__ = "GPLv3"
 __maintainer__ = "Sergio Tabares Hernández"
 __status__ = "Production"
-__version__ = "0.0.3"
+__version__ = "0.0.4"
 
 from collections import defaultdict
+from copy import deepcopy
 from pathlib import Path
 import sys
 from time import perf_counter
@@ -220,6 +221,7 @@ def blinking_star_test(desired_blinking_freq=10):
     detected_stars = {}
     next_star_id = 0
     wait_time = 1
+    blinking_star_log = []
 
     while True:
         if mini_test:
@@ -252,12 +254,14 @@ def blinking_star_test(desired_blinking_freq=10):
                     center=(int(star["position"][0]),
                             int(star["position"][1])),
                     radius=PX_SENSITIVITY,
-                    # color=(0, 0, 100),
-                    color=star["color"],
+                    color=(0, 0, 100),
+                    # color=star["color"],
                     thickness=1,
                 )
 
             if blinking_star is not None:
+                blinking_star_log.append(deepcopy(blinking_star))
+
                 cv.circle(
                     show_frame,
                     center=(int(blinking_star[1]["position"][0]),
@@ -295,6 +299,28 @@ def blinking_star_test(desired_blinking_freq=10):
         print()
 
     cv.destroyAllWindows()
+
+    if not CHECKING_VIDEO_VELOCITY:
+        file_path = "./blinking_stars_log.csv"
+        with open(file_path, "w", encoding="utf-8-sig") as file:
+            print("id;",
+                  "position;",
+                  "times_detected;",
+                  "lifetime;",
+                  "left_lifetime;",
+                  "tickets_to_be_the_satellite;",
+                  "blinking_freq;",
+                  file=file)
+
+            for star in blinking_star_log:
+                print(f"{star[0]};",
+                      f"{star[1]['position']};",
+                      f"{star[1]['times_detected']};",
+                      f"{star[1]['lifetime']};",
+                      f"{star[1]['left_lifetime']};",
+                      f"{star[1]['tickets_to_be_the_satellite']};",
+                      f"{star[1]['blinking_freq']};",
+                      file=file)
 
 
 def find_add_candidates(descriptors, descriptor, dic):
