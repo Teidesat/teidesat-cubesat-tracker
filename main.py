@@ -251,8 +251,8 @@ def blinking_star_test(desired_blinking_freq=10):
             for star in detected_stars.values():
                 cv.circle(
                     show_frame,
-                    center=(int(star["position"][0]),
-                            int(star["position"][1])),
+                    center=(int(star["last_positions"][-1][0]),
+                            int(star["last_positions"][-1][1])),
                     radius=PX_SENSITIVITY,
                     color=(0, 0, 100),
                     # color=star["color"],
@@ -264,8 +264,8 @@ def blinking_star_test(desired_blinking_freq=10):
 
                 cv.circle(
                     show_frame,
-                    center=(int(blinking_star[1]["position"][0]),
-                            int(blinking_star[1]["position"][1])),
+                    center=(int(blinking_star[1]["last_positions"][-1][0]),
+                            int(blinking_star[1]["last_positions"][-1][1])),
                     radius=PX_SENSITIVITY,
                     color=(0, 200, 0),
                     thickness=1,
@@ -304,22 +304,24 @@ def blinking_star_test(desired_blinking_freq=10):
         file_path = "./blinking_stars_log.csv"
         with open(file_path, "w", encoding="utf-8-sig") as file:
             print("id;",
-                  "position;",
                   "times_detected;",
                   "lifetime;",
                   "left_lifetime;",
                   "tickets_to_be_the_satellite;",
                   "blinking_freq;",
+                  "movement_vector;",
+                  "last_positions;",
                   file=file)
 
             for star in blinking_star_log:
                 print(f"{star[0]};",
-                      f"{star[1]['position']};",
                       f"{star[1]['times_detected']};",
                       f"{star[1]['lifetime']};",
                       f"{star[1]['left_lifetime']};",
                       f"{star[1]['tickets_to_be_the_satellite']};",
                       f"{star[1]['blinking_freq']};",
+                      f"{star[1]['movement_vector']};",
+                      f"{star[1]['last_positions']};",
                       file=file)
 
 

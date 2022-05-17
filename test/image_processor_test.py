@@ -80,12 +80,13 @@ class DataGettersTestCase(unittest.TestCase):
         detected_stars = {}
         expected_result = ({
             0: {
-                "position": (10, 15),
+                "last_positions": [(10, 15)],
                 "times_detected": 1,
                 "lifetime": 1,
                 "left_lifetime": DEFAULT_LEFT_LIFETIME,
                 "blinking_freq": fps,
                 "tickets_to_be_the_satellite": 0,
+                "movement_vector": (0, 0),
                 "color": [255, 205.57729349197388, 0.0],
             }
         }, 1)
@@ -105,23 +106,25 @@ class DataGettersTestCase(unittest.TestCase):
         star_positions = [(11, 16)]
         detected_stars = {
             0: {
-                "position": (10, 15),
+                "last_positions": [(10, 15)],
                 "times_detected": 1,
                 "lifetime": 3,
                 "left_lifetime": DEFAULT_LEFT_LIFETIME,
                 "blinking_freq": fps,
                 "tickets_to_be_the_satellite": 0,
+                "movement_vector": (0, 0),
                 "color": [],
             }
         }
         expected_result = ({
             0: {
-                "position": (11, 16),
+                "last_positions": [(10, 15), (11, 16)],
                 "times_detected": 2,
                 "lifetime": 4,
                 "left_lifetime": DEFAULT_LEFT_LIFETIME,
                 "blinking_freq": fps / 2,
                 "tickets_to_be_the_satellite": 1,
+                "movement_vector": (0, 0),
                 "color": [],
             }
         }, 1)
@@ -141,23 +144,25 @@ class DataGettersTestCase(unittest.TestCase):
         star_positions = []
         detected_stars = {
             0: {
-                "position": (11, 16),
+                "last_positions": [(11, 16)],
                 "times_detected": 2,
                 "lifetime": 2,
                 "left_lifetime": DEFAULT_LEFT_LIFETIME,
                 "blinking_freq": fps,
                 "tickets_to_be_the_satellite": 0,
+                "movement_vector": (0, 0),
                 "color": [],
             }
         }
         expected_result = ({
             0: {
-                "position": (11, 16),
+                "last_positions": [(11, 16)],
                 "times_detected": 2,
                 "lifetime": 3,
                 "left_lifetime": DEFAULT_LEFT_LIFETIME - 1,
                 "blinking_freq": (2 / 3) * fps,
                 "tickets_to_be_the_satellite": -2,
+                "movement_vector": (0, 0),
                 "color": [],
             }
         }, 1)
@@ -175,7 +180,13 @@ class DataGettersTestCase(unittest.TestCase):
         fps = 60
         desired_blinking_freq = 30
         star_positions = []
-        detected_stars = {0: {"position": (11, 16), "left_lifetime": 0}}
+        detected_stars = {
+            0: {
+                "last_positions": [(11, 16)],
+                "left_lifetime": 0,
+                "movement_vector": (0, 0),
+            }
+        }
         expected_result = ({}, 1)
 
         result = star_tracker(star_positions,

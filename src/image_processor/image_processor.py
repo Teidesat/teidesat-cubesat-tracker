@@ -22,6 +22,15 @@ DISTANCE = 20
 BEST_ALGORITHM_INDEX = 8
 
 DEFAULT_LEFT_LIFETIME = 10
+DEFAULT_MOVEMENT_VECTOR = (0, 0)
+
+MIN_HISTORY_LEN = 10
+MAX_HISTORY_LEN = 20
+
+REMOVE_OUTLIERS = True
+MAX_OUTLIER_THRESHOLD = 1.5
+MAX_MOVE_DISTANCE = 10
+
 FREQ_THRESHOLD = 3
 
 KERNEL_Y = np.array([[1, 2, 1], [0, 0, 0], [-1, -2, -1]])
@@ -272,16 +281,18 @@ def star_tracker(star_positions_: list[tuple[int, int]],
                 detected_stars.pop(old_star_id)
                 continue
 
-            position = old_star_info["position"]
             times_detected = old_star_info["times_detected"]
             left_lifetime = old_star_info["left_lifetime"] - 1
 
         else:
             star_positions.remove(new_star_pos)
-            position = new_star_pos
+            old_star_info["last_positions"].append(new_star_pos)
 
             times_detected = old_star_info["times_detected"] + 1
             left_lifetime = DEFAULT_LEFT_LIFETIME
+
+        last_positions = old_star_info["last_positions"][-MAX_HISTORY_LEN:]
+        movement_vector = get_movement_vector(last_positions)
 
         lifetime = old_star_info["lifetime"] + 1
         blinking_freq = ((times_detected / lifetime) * fps)
@@ -293,12 +304,13 @@ def star_tracker(star_positions_: list[tuple[int, int]],
             ttbts -= 2
 
         detected_stars[old_star_id].update({
-            "position": position,
+            "last_positions": last_positions,
             "times_detected": times_detected,
             "lifetime": lifetime,
             "left_lifetime": left_lifetime,
             "blinking_freq": blinking_freq,
-            "tickets_to_be_the_satellite": ttbts
+            "tickets_to_be_the_satellite": ttbts,
+            "movement_vector": movement_vector,
         })
 
     detected_stars, stop_range_id = add_remaining_stars(
@@ -312,25 +324,57 @@ def get_new_star_position(
         old_star_info: tuple[int, int]) -> tuple[int, int] | None:
     """ Function to get the new position of a given star. """
 
-    old_star_pos = old_star_info["position"]
+    expected_star_pos = (old_star_info["last_positions"][-1][0] +
+                         old_star_info["movement_vector"][0],
+                         old_star_info["last_positions"][-1][1] +
+                         old_star_info["movement_vector"][1])
 
     try:
-        star_positions.index(old_star_pos)
-        return old_star_pos
+        star_positions.index(expected_star_pos)
+        return expected_star_pos
 
     except ValueError:
         new_star_pos = None
         best_candidate_dist = inf
 
         for current_star_pos in star_positions:
-            current_pair_dist = dist(old_star_pos, current_star_pos)
+            current_pair_dist = dist(expected_star_pos, current_star_pos)
 
-            if (current_pair_dist < DISTANCE
+            if (current_pair_dist < MAX_MOVE_DISTANCE
                     and best_candidate_dist > current_pair_dist):
                 best_candidate_dist = current_pair_dist
                 new_star_pos = current_star_pos
 
         return new_star_pos
+
+
+def get_movement_vector(last_positions):
+    """ Function to calculate the star movement vector. """
+
+    if len(last_positions) < MIN_HISTORY_LEN:
+        return DEFAULT_MOVEMENT_VECTOR
+
+    movement_vectors = [
+        (point_2[0] - point_1[0], point_2[1] - point_1[1])
+        for point_1, point_2 in zip(last_positions, last_positions[1:])
+    ]
+
+    m_v_len = len(movement_vectors)
+    mean_vector = [sum(values) / m_v_len for values in zip(*movement_vectors)]
+
+    if not REMOVE_OUTLIERS:
+        return mean_vector
+
+    filtered_vectors = [
+        current_vector for current_vector in movement_vectors
+        if dist(mean_vector, current_vector) < MAX_OUTLIER_THRESHOLD
+    ]
+
+    f_v_len = len(filtered_vectors)
+    if f_v_len != 0:
+        return [sum(values) / f_v_len for values in zip(*filtered_vectors)]
+
+    return DEFAULT_MOVEMENT_VECTOR
 
 
 def add_remaining_stars(star_positions: list[tuple[int, int]],
@@ -344,12 +388,13 @@ def add_remaining_stars(star_positions: list[tuple[int, int]],
     for star_id, star_position in zip(star_ids, star_positions):
         detected_stars.update({
             star_id: {
-                "position": star_position,
+                "last_positions": [star_position],
                 "times_detected": 1,
                 "lifetime": 1,
                 "left_lifetime": DEFAULT_LEFT_LIFETIME,
                 "blinking_freq": fps,
                 "tickets_to_be_the_satellite": 0,
+                "movement_vector": DEFAULT_MOVEMENT_VECTOR,
                 "color": [v * 255 for v in hsv_to_rgb(random.random(), 1, 1)],
             }
         })
