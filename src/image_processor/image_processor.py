@@ -265,62 +265,105 @@ def opencv_fast(image, threshold: float, px_sensitivity: int, fast: bool,
     return points
 
 
-def star_tracker(star_positions_: list[tuple[int, int]],
-                 detected_stars_: dict[int, dict],
+def star_tracker(star_positions: list[tuple[int, int]],
+                 detected_stars: dict[int, dict],
                  desired_blinking_freq: float = 30,
                  fps: float = 60,
                  next_star_id: int = 0) -> tuple[dict[int, dict], int]:
     """ Function to keep track of the detected stars maintaining it's data. """
-    star_positions = star_positions_.copy()
-    detected_stars = detected_stars_.copy()
 
-    for old_star_id, old_star_info in detected_stars.copy().items():
-        new_star_pos = get_new_star_position(star_positions, old_star_info)
-
-        if new_star_pos is None:
-            if old_star_info["left_lifetime"] == 0:
-                detected_stars.pop(old_star_id)
-                continue
-
-            old_star_info["last_times_detected"].append(0)
-            left_lifetime = old_star_info["left_lifetime"] - 1
-
-        else:
-            star_positions.remove(new_star_pos)
-            old_star_info["last_positions"].append(new_star_pos)
-
-            old_star_info["last_times_detected"].append(1)
-            left_lifetime = DEFAULT_LEFT_LIFETIME
-
-        last_positions = old_star_info["last_positions"][-MAX_HISTORY_LEN:]
-        last_times_detected = old_star_info["last_times_detected"][
-            -MAX_HISTORY_LEN:]
-        movement_vector = get_movement_vector(last_positions)
-
-        lifetime = old_star_info["lifetime"] + 1
-        blinking_freq = fps * (sum(last_times_detected) /
-                               len(last_times_detected))
-
-        detection_confidence = old_star_info["detection_confidence"]
-        if abs(blinking_freq - desired_blinking_freq) < FREQUENCY_THRESHOLD:
-            detection_confidence += 1
-        else:
-            detection_confidence -= 2
-
-        detected_stars[old_star_id].update({
-            "last_positions": last_positions,
-            "last_times_detected": last_times_detected,
-            "lifetime": lifetime,
-            "left_lifetime": left_lifetime,
-            "blinking_freq": blinking_freq,
-            "detection_confidence": detection_confidence,
-            "movement_vector": movement_vector,
-        })
+    for old_star in detected_stars.copy().items():
+        star_positions, detected_stars = update_star_info(
+            old_star,
+            star_positions,
+            detected_stars,
+            desired_blinking_freq,
+            fps,
+        )
 
     detected_stars, stop_range_id = add_remaining_stars(
-        star_positions, detected_stars, fps, next_star_id)
+        star_positions,
+        detected_stars,
+        fps,
+        next_star_id,
+    )
 
     return detected_stars, stop_range_id
+
+
+def add_remaining_stars(star_positions: list[tuple[int, int]],
+                        detected_stars: dict[int, dict], fps: float,
+                        next_star_id: int) -> tuple[dict[int, dict], int]:
+    """ Function to add the remaining stars as new ones into de stars dict. """
+
+    stop_range_id = next_star_id + len(star_positions)
+    star_ids = range(next_star_id, stop_range_id)
+
+    for star_id, star_position in zip(star_ids, star_positions):
+        detected_stars.update({
+            star_id: {
+                "last_positions": [star_position],
+                "last_times_detected": [1],
+                "lifetime": 1,
+                "left_lifetime": DEFAULT_LEFT_LIFETIME,
+                "blinking_freq": fps,
+                "detection_confidence": 0,
+                "movement_vector": DEFAULT_MOVEMENT_VECTOR,
+                "color": [v * 255 for v in hsv_to_rgb(random.random(), 1, 1)],
+            }
+        })
+
+    return detected_stars, stop_range_id
+
+
+def update_star_info(old_star, star_positions, detected_stars,
+                     desired_blinking_freq, fps):
+    """ Function to update a star's information. """
+
+    old_star_id, old_star_info = old_star
+
+    new_star_pos = get_new_star_position(star_positions, old_star_info)
+
+    if new_star_pos is None:
+        if old_star_info["left_lifetime"] == 0:
+            detected_stars.pop(old_star_id)
+            return star_positions, detected_stars
+
+        old_star_info["last_times_detected"].append(0)
+        left_lifetime = old_star_info["left_lifetime"] - 1
+
+    else:
+        star_positions.remove(new_star_pos)
+        old_star_info["last_positions"].append(new_star_pos)
+
+        old_star_info["last_times_detected"].append(1)
+        left_lifetime = DEFAULT_LEFT_LIFETIME
+
+    last_positions = old_star_info["last_positions"][-MAX_HISTORY_LEN:]
+    last_times_detected = old_star_info["last_times_detected"][
+        -MAX_HISTORY_LEN:]
+    movement_vector = get_movement_vector(last_positions)
+
+    lifetime = old_star_info["lifetime"] + 1
+    blinking_freq = fps * (sum(last_times_detected) / len(last_times_detected))
+
+    detection_confidence = old_star_info["detection_confidence"]
+    if abs(blinking_freq - desired_blinking_freq) < FREQUENCY_THRESHOLD:
+        detection_confidence += 1
+    else:
+        detection_confidence -= 2
+
+    detected_stars[old_star_id].update({
+        "last_positions": last_positions,
+        "last_times_detected": last_times_detected,
+        "lifetime": lifetime,
+        "left_lifetime": left_lifetime,
+        "blinking_freq": blinking_freq,
+        "detection_confidence": detection_confidence,
+        "movement_vector": movement_vector,
+    })
+
+    return star_positions, detected_stars
 
 
 def get_new_star_position(
@@ -379,31 +422,6 @@ def get_movement_vector(last_positions):
         return [sum(values) / f_v_len for values in zip(*filtered_vectors)]
 
     return DEFAULT_MOVEMENT_VECTOR
-
-
-def add_remaining_stars(star_positions: list[tuple[int, int]],
-                        detected_stars: dict[int, dict], fps: float,
-                        next_star_id: int) -> tuple[dict[int, dict], int]:
-    """ Function to add the remaining stars as new ones into de stars dict. """
-
-    stop_range_id = next_star_id + len(star_positions)
-    star_ids = range(next_star_id, stop_range_id)
-
-    for star_id, star_position in zip(star_ids, star_positions):
-        detected_stars.update({
-            star_id: {
-                "last_positions": [star_position],
-                "last_times_detected": [1],
-                "lifetime": 1,
-                "left_lifetime": DEFAULT_LEFT_LIFETIME,
-                "blinking_freq": fps,
-                "detection_confidence": 0,
-                "movement_vector": DEFAULT_MOVEMENT_VECTOR,
-                "color": [v * 255 for v in hsv_to_rgb(random.random(), 1, 1)],
-            }
-        })
-
-    return detected_stars, stop_range_id
 
 
 def detect_shooting_stars(detected_stars: dict[int, dict],
