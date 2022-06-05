@@ -14,7 +14,7 @@ import cv2 as cv
 import numpy as np
 import skimage.feature
 
-#* Constants
+# * Constants
 THRESHOLD = 50
 PX_SENSITIVITY = 8
 FAST = True
@@ -42,18 +42,22 @@ random.seed(time())
 
 def prune_close_points(indices: list[tuple[int, int]],
                        min_distance: float) -> list[tuple[int, int]]:
-    """ Function to prune close points because of their probabilities of being a
-    duplicate reference to the same element of an image. """
+    """ Function to prune close points because of their probabilities of being
+    a duplicate reference to the same element of an image. """
 
     pruned = []
+
     for i, point_1 in enumerate(indices):
         duplicate = False
+
         for point_2 in indices[i + 1:]:
             if dist(point_1, point_2) < min_distance:
                 duplicate = True
                 break
+
         if not duplicate:
             pruned.append(point_1)
+
     return pruned
 
 
@@ -67,7 +71,7 @@ def find_stars(
     """
     Function to get all the bright points of a given image.
 
-    To do so, you can select one of the following algorithms by specifying it's
+    To do so, you can select one of the following algorithms by specifying its
     index on the following list:
 
     1. Sobel filter.
@@ -82,7 +86,7 @@ def find_stars(
 
     algorithms_list = [
         sobel_filter,
-        adaptative_threshold,
+        adaptive_threshold,
         scikit_blob_log,
         scikit_blob_dog,
         scikit_blob_doh,
@@ -110,7 +114,8 @@ def sobel_filter(image, threshold: float, px_sensitivity: int, fast: bool,
 
         # Group stars that are closer
         indices = np.round(indices / px_sensitivity) * px_sensitivity
-        indices = {(x, y) for y, x in indices}
+        indices = [(x, y) for y, x in indices]
+
         return indices
 
     else:
@@ -122,11 +127,12 @@ def sobel_filter(image, threshold: float, px_sensitivity: int, fast: bool,
         indices_round = {(y, x): i for i, (y, x) in enumerate(indices_round)}
         indices = [(indices[i][1], indices[i][0])
                    for _, i in indices_round.items()]
+
         return prune_close_points(indices, distance)
 
 
-def adaptative_threshold(image, threshold: float, px_sensitivity: int,
-                         fast: bool, distance: float) -> list[tuple[int, int]]:
+def adaptive_threshold(image, threshold: float, px_sensitivity: int,
+                       fast: bool, distance: float) -> list[tuple[int, int]]:
     """ Adaptive threshold's implementation for star detection. """
 
     if distance % 2 == 0:
@@ -162,7 +168,7 @@ def scikit_blob_log(image, threshold: float, px_sensitivity: int, fast: bool,
 
 def scikit_blob_dog(image, threshold: float, px_sensitivity: int, fast: bool,
                     distance: float) -> list[tuple[int, int]]:
-    """ Scikit-Image's Difference of Gaussian algorithm for image detection. """
+    """ Scikit-Image's Difference of Gaussian algorithm for image detection."""
 
     # blobs_dog = skimage.feature.blob_dog(image, threshold, max_sigma=2)
     blobs_dog = skimage.feature.blob_dog(image, threshold=0.05, max_sigma=2)
@@ -176,7 +182,7 @@ def scikit_blob_dog(image, threshold: float, px_sensitivity: int, fast: bool,
 
 def scikit_blob_doh(image, threshold: float, px_sensitivity: int, fast: bool,
                     distance: float) -> list[tuple[int, int]]:
-    """ Scikit-Image's Determinant of Hessian algorithm for image detection. """
+    """ Scikit-Image's Determinant of Hessian algorithm for image detection."""
 
     # blobs_doh = skimage.feature.blob_doh(image, threshold, max_sigma=2)
     blobs_doh = skimage.feature.blob_doh(image, threshold=0.00075, max_sigma=2)
@@ -270,7 +276,7 @@ def star_tracker(star_positions: list[tuple[int, int]],
                  desired_blinking_freq: float = 30,
                  fps: float = 60,
                  next_star_id: int = 0) -> tuple[dict[int, dict], int]:
-    """ Function to keep track of the detected stars maintaining it's data. """
+    """ Function to keep track of the detected stars maintaining its data. """
 
     for old_star in detected_stars.copy().items():
         star_positions, detected_stars = update_star_info(
@@ -366,9 +372,8 @@ def update_star_info(old_star, star_positions, detected_stars,
     return star_positions, detected_stars
 
 
-def get_new_star_position(
-        star_positions: list[tuple[int, int]],
-        old_star_info: tuple[int, int]) -> tuple[int, int] | None:
+def get_new_star_position(star_positions: list[tuple[int, int]],
+                          old_star_info: dict) -> tuple[int, int] | None:
     """ Function to get the new position of a given star. """
 
     expected_star_pos = (old_star_info["last_positions"][-1][0] +

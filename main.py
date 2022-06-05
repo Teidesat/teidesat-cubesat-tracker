@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-TeideSat Satelite Tracking for the Optical Ground Station
+TeideSat Satellite Tracking for the Optical Ground Station
 
 # ToDo: Check if this is correct
 #     This program is free software: you can redistribute it and/or modify it
@@ -12,10 +12,10 @@ TeideSat Satelite Tracking for the Optical Ground Station
 # ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 # You should have received a copy of the GNU General Public License along with
-# this program. If not, see <http://www.gnu.org/licenses/>.
-""" # ToDo: complete module docstring
+# this program. If not, see <https://www.gnu.org/licenses/>.
+"""  # ToDo: complete module docstring
 
-# ToDo: add the mising module information
+# ToDo: add the missing module information
 __authors__ = ["Jorge Sierra", "Sergio Tabares Hernández"]
 # __contact__ = "mail@example.com"
 # __copyright__ = "Copyright $YEAR, $COMPANY_NAME"
@@ -44,18 +44,18 @@ from src.image_processor.image_processor import (find_stars, star_tracker,
 from src.image_processor.star_descriptor import StarDescriptor
 from src.utils import time_it, Distance
 
-#* Constants
+# * Constants
 THRESHOLD = 50
 PX_SENSITIVITY = 8
 FAST = True
 DISTANCE = 20
 BEST_ALGORITHM_INDEX = 8
 
-SAT_DESIRED_BLINKING_FREQ = 10
+SAT_DESIRED_BLINKING_FREQ = 15
 MOVEMENT_THRESHOLD = 2
 
 PATH_FRAME = Path("./data/frames/video1/frame2000.jpg")
-PATH_VIDEO = Path("./data/videos/video5.mp4")
+PATH_VIDEO = Path("./data/videos/video4.mp4")
 PATH_CATALOG = Path("./data/catalog/hygdata_v3.csv")
 
 CHECKING_VIDEO_VELOCITY = False
@@ -63,11 +63,11 @@ CHECKING_FRAME_VELOCITY = False
 
 COLOR_CAMERA = True
 
-#* Variables
+# * Variables
 translator = {}
 pairs = []
 
-#* Decorator
+# * Decorator
 if CHECKING_FRAME_VELOCITY:
     find_stars = time_it(find_stars)
     star_tracker = time_it(star_tracker)
@@ -82,7 +82,7 @@ def main():
 
     # video_test(algorithm_index=BEST_ALGORITHM_INDEX)
 
-    #* comparison of all different find_stars' algorithms
+    # * comparison of all different find_stars' algorithms
     # for index in range(1, 9):
     #     print(f"Video test {index}...")
     #     video_test(algorithm_index=index)
@@ -102,6 +102,9 @@ def process_image(image,
 
     if COLOR_CAMERA:
         gray = cv.cvtColor(image, cv.COLOR_RGB2GRAY)
+    else:
+        gray = image
+
     stars = find_stars(gray, threshold, px_sensitivity, fast, distance,
                        algorithm_index)
 
@@ -112,7 +115,7 @@ def process_image(image,
                 center=(int(x_coord), int(y_coord)),
                 radius=PX_SENSITIVITY,
                 color=(0, 0, 100),
-                thickness=1,
+                thickness=2,
             )
     return image
 
@@ -141,21 +144,27 @@ def video_test(
     video. """
 
     print("Processing video from:", str_path_video)
-    vidcap = cv.VideoCapture(str_path_video)
-    success, image = vidcap.read()
+    vid_cap = cv.VideoCapture(str_path_video)
+    if not vid_cap.isOpened():
+        sys.exit("Error: Unable to open video.")
 
     if CHECKING_VIDEO_VELOCITY:
         processed_frames = 0
         start_time = perf_counter()
 
     wait_time = 1
-    while success:
-        image = process_image(image, algorithm_index=algorithm_index)
+    while True:
+        success, frame = vid_cap.read()
+        if not success:
+            break
+
+        show_frame = process_image(frame, algorithm_index=algorithm_index)
 
         if CHECKING_VIDEO_VELOCITY:
             processed_frames += 1
         else:
-            cv.imshow(str_path_video, image)
+            cv.namedWindow(str_path_video, cv.WINDOW_NORMAL)
+            cv.imshow(str_path_video, show_frame)
 
             key = cv.waitKey(wait_time)
             if key == ord('z'):
@@ -169,8 +178,6 @@ def video_test(
             if key == ord('q'):
                 break
 
-        success, image = vidcap.read()
-
     if CHECKING_VIDEO_VELOCITY:
         processing_time = perf_counter() - start_time
 
@@ -181,7 +188,7 @@ def video_test(
         print("  Processed frames:", processed_frames)
         print("  Time needed:", processing_time)
         print("  FPS:", processed_frames / processing_time)
-    print()
+        print()
 
     cv.destroyAllWindows()
 
@@ -189,12 +196,12 @@ def video_test(
 def blinking_star_test(desired_blinking_freq=10):
     """ Function to test the detection of the blinking star. """
 
-    fps = 30
-    #? how do I know this value in real time?
+    video_fps = 30
+    # ? how do I know this value in real time?
     # if source_from_video:
-    #     fps = vidcap.get(cv.CAP_PROP_FPS)
+    #     fps = vid_cap.get(cv.CAP_PROP_FPS)
     # elif source_from_camera:
-    #     fps = vidcap.get(cv.CAP_PROP_FPS) # maybe works but maybe not
+    #     fps = vid_cap.get(cv.CAP_PROP_FPS) # maybe works but maybe not
 
     mini_test = False
     if mini_test:
@@ -215,7 +222,7 @@ def blinking_star_test(desired_blinking_freq=10):
 
     else:
         str_path_video = str(PATH_VIDEO)
-        vidcap = cv.VideoCapture(str_path_video)
+        vid_cap = cv.VideoCapture(str_path_video)
 
     if CHECKING_VIDEO_VELOCITY:
         start_time = perf_counter()
@@ -224,18 +231,21 @@ def blinking_star_test(desired_blinking_freq=10):
     detected_stars = {}
     next_star_id = 0
     wait_time = 1
-    blinking_star_log = []
+    satellite_log = []
 
     while True:
         if mini_test:
             frame = video_frames[processed_frames % len(video_frames)]
         else:
-            success, frame = vidcap.read()
+            success, frame = vid_cap.read()
             if not success:
                 break
 
         if COLOR_CAMERA:
             gray = cv.cvtColor(frame, cv.COLOR_RGB2GRAY)
+        else:
+            gray = frame
+
         processed_frames += 1
 
         new_star_positions = find_stars(gray, THRESHOLD, PX_SENSITIVITY, FAST,
@@ -243,8 +253,8 @@ def blinking_star_test(desired_blinking_freq=10):
 
         detected_stars, next_star_id = star_tracker(new_star_positions,
                                                     detected_stars,
-                                                    desired_blinking_freq, fps,
-                                                    next_star_id)
+                                                    desired_blinking_freq,
+                                                    video_fps, next_star_id)
 
         shooting_stars = detect_shooting_stars(detected_stars,
                                                MOVEMENT_THRESHOLD)
@@ -262,7 +272,7 @@ def blinking_star_test(desired_blinking_freq=10):
                     radius=PX_SENSITIVITY,
                     color=(0, 0, 100),
                     # color=star["color"],
-                    thickness=1,
+                    thickness=2,
                 )
 
             for star in shooting_stars.values():
@@ -272,11 +282,11 @@ def blinking_star_test(desired_blinking_freq=10):
                             int(star["last_positions"][-1][1])),
                     radius=PX_SENSITIVITY,
                     color=(0, 200, 200),
-                    thickness=1,
+                    thickness=2,
                 )
 
             if blinking_star is not None:
-                blinking_star_log.append(deepcopy(blinking_star))
+                satellite_log.append(deepcopy(blinking_star))
 
                 cv.circle(
                     show_frame,
@@ -284,11 +294,11 @@ def blinking_star_test(desired_blinking_freq=10):
                             int(blinking_star[1]["last_positions"][-1][1])),
                     radius=PX_SENSITIVITY,
                     color=(0, 200, 0),
-                    thickness=1,
+                    thickness=2,
                 )
 
-            cv.namedWindow("blinking star", cv.WINDOW_NORMAL)
-            cv.imshow("blinking star", show_frame)
+            cv.namedWindow(str_path_video, cv.WINDOW_NORMAL)
+            cv.imshow(str_path_video, show_frame)
 
             key = cv.waitKey(wait_time)
             if key == ord('z'):
@@ -317,7 +327,7 @@ def blinking_star_test(desired_blinking_freq=10):
     cv.destroyAllWindows()
 
     if not CHECKING_VIDEO_VELOCITY:
-        file_path = "./blinking_stars_log.csv"
+        file_path = "./satellite_log.csv"
         with open(file_path, "w", encoding="utf-8-sig") as file:
             print("id;",
                   "last_times_detected;",
@@ -329,7 +339,7 @@ def blinking_star_test(desired_blinking_freq=10):
                   "last_positions;",
                   file=file)
 
-            for star in blinking_star_log:
+            for star in satellite_log:
                 print(f"{star[0]};",
                       f"{star[1]['last_times_detected']};",
                       f"{star[1]['lifetime']};",
@@ -368,6 +378,9 @@ def identify_test():
     image = cv.imread(str(PATH_FRAME)).astype("uint8")
     if COLOR_CAMERA:
         gray = cv.cvtColor(image, cv.COLOR_RGB2GRAY)
+    else:
+        gray = image
+
     stars = find_stars(gray, THRESHOLD, PX_SENSITIVITY, fast=False)
 
     # Chose a subset
@@ -389,12 +402,12 @@ def identify_test():
         find_add_candidates(descs_original, desc, candidates[desc.star])
 
     letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    numbers = "123456789"  #! Numbers not used
+    numbers = "123456789"  # ! Numbers not used
 
     def translate(star):
         """ Docstring """  # ToDo: redact docstring
 
-        nonlocal letters, numbers  #! Numbers not used
+        nonlocal letters, numbers  # ! Numbers not used
         if star not in translator:
             if star[0] < 10:
                 translator[star] = letters[-1]
