@@ -4,6 +4,7 @@
 Simple script to store all the frames of a video as separate images.
 """
 
+from datetime import datetime
 import sys
 
 from pathlib import Path
@@ -12,7 +13,8 @@ import cv2 as cv
 import numpy as np
 
 INPUT = Path("../data/videos/video3.mp4")
-OUTPUT = Path("../data/videos/video_test.mp4")
+OUTPUT = Path("../data/videos/video_output_" +
+              datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".mp4")
 
 PX_SENSITIVITY = 10
 
@@ -50,20 +52,27 @@ def make_a_star_blink(input_video_path: Path, output_video_path: Path):
 
     global click_location, remove_star
 
-    vidcap = cv.VideoCapture(str(input_video_path))
-    if not vidcap.isOpened():
+    vid_cap = cv.VideoCapture(str(input_video_path))
+    if not vid_cap.isOpened():
         sys.exit("Error: Unable to open video.")
 
-    width = int(vidcap.get(cv.CAP_PROP_FRAME_WIDTH))
-    height = int(vidcap.get(cv.CAP_PROP_FRAME_HEIGHT))
-    fps = int(vidcap.get(cv.CAP_PROP_FPS))
-    frame_count = int(vidcap.get(cv.CAP_PROP_FRAME_COUNT))
+    width = int(vid_cap.get(cv.CAP_PROP_FRAME_WIDTH))
+    height = int(vid_cap.get(cv.CAP_PROP_FRAME_HEIGHT))
+    fps = int(vid_cap.get(cv.CAP_PROP_FPS))
+    frame_count = int(vid_cap.get(cv.CAP_PROP_FRAME_COUNT))
 
     print(f"\nVideo format: {width}x{height} px - {fps} fps")
     print("Number of frames:", frame_count)
 
-    codec = cv.VideoWriter_fourcc(*'mp4v')
-    video = cv.VideoWriter(str(output_video_path), codec, fps, (width, height))
+    output_video = cv.VideoWriter(
+        str(output_video_path),
+        cv.VideoWriter_fourcc(*'mp4v'),
+        fps,
+        (width, height),
+    )
+
+    if not output_video.isOpened():
+        sys.exit("\nError: Unable to create video file.")
 
     desired_blinking_freq = int(input("\nDesired blinking frequency: "))
     if desired_blinking_freq > fps:
@@ -76,13 +85,13 @@ def make_a_star_blink(input_video_path: Path, output_video_path: Path):
     print("\nClick on the star you want to remove\n")
 
     processed_frames = 0
-    success, frame = vidcap.read()
+    success, frame = vid_cap.read()
     while success:
         print("Current frame:", processed_frames, end="\r")
         if processed_frames % frames_to_skip == 0:
-            video.write(frame)
+            output_video.write(frame)
 
-            success, frame = vidcap.read()
+            success, frame = vid_cap.read()
             processed_frames += 1
 
         else:
@@ -99,17 +108,17 @@ def make_a_star_blink(input_video_path: Path, output_video_path: Path):
                     color=color,
                     thickness=cv.FILLED,
                 )
-                video.write(frame)
+                output_video.write(frame)
 
-                success, frame = vidcap.read()
+                success, frame = vid_cap.read()
                 processed_frames += 1
 
         key = cv.waitKey(1)
 
         if key == ord('s'):
-            video.write(frame)
+            output_video.write(frame)
 
-            success, frame = vidcap.read()
+            success, frame = vid_cap.read()
             processed_frames += 1
 
         if key == ord('q'):

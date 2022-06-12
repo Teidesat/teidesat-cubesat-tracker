@@ -30,6 +30,7 @@ __version__ = "0.0.5"
 
 from collections import defaultdict
 from copy import deepcopy
+from datetime import datetime
 from pathlib import Path
 import sys
 from time import perf_counter
@@ -62,6 +63,11 @@ CHECKING_VIDEO_VELOCITY = False
 CHECKING_FRAME_VELOCITY = False
 
 COLOR_CAMERA = True
+VIDEO_FROM_CAMERA = False
+
+OUTPUT_VIDEO_TO_FILE = True
+PATH_OUTPUT_VIDEO = Path("./data/videos/video_output_" +
+                         datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".mp4")
 
 # * Global variables
 translator = {}
@@ -113,7 +119,7 @@ def single_frame_test(str_path_frame=str(PATH_FRAME)):
     print("Processing frame from:", str_path_frame)
     image = cv.imread(str_path_frame)
     if image is None:
-        sys.exit("Could not read the image.")
+        sys.exit("\nCould not read the image.")
 
     image = process_image(image)
     print("\n")
@@ -130,7 +136,7 @@ def video_test(str_path_video=str(PATH_VIDEO)):
     print("Processing video from:", str_path_video)
     vid_cap = cv.VideoCapture(str_path_video)
     if not vid_cap.isOpened():
-        sys.exit("Error: Unable to open video.")
+        sys.exit("\nError: Unable to open video.")
 
     wait_time = 1
     wait_options = {
@@ -146,6 +152,9 @@ def video_test(str_path_video=str(PATH_VIDEO)):
     else:
         cv.namedWindow(str_path_video, cv.WINDOW_NORMAL)
 
+        if OUTPUT_VIDEO_TO_FILE:
+            output_video = create_export_video_file(vid_cap)
+
     while True:
         success, frame = vid_cap.read()
         if not success:
@@ -158,6 +167,9 @@ def video_test(str_path_video=str(PATH_VIDEO)):
         else:
             cv.imshow(str_path_video, show_frame)
 
+            if OUTPUT_VIDEO_TO_FILE:
+                output_video.write(show_frame)
+
             key = cv.waitKey(wait_time)
 
             if key == ord('q'):
@@ -168,24 +180,29 @@ def video_test(str_path_video=str(PATH_VIDEO)):
     if CHECKING_VIDEO_VELOCITY:
         print_time_statistics(processed_frames, start_time)
 
+    elif OUTPUT_VIDEO_TO_FILE:
+        print(f"Video saved on '{str(PATH_OUTPUT_VIDEO)}'")
+
     cv.destroyAllWindows()
 
 
-def satellite_detection_test(desired_blinking_freq=SAT_DESIRED_BLINKING_FREQ,
-                             str_path_video=str(PATH_VIDEO)):
+def satellite_detection_test(desired_blinking_freq=SAT_DESIRED_BLINKING_FREQ):
     """ Function to test the detection of the blinking star. """
 
-    video_fps = 30
-    # ? how do I know this value in real time?
-    # if source_from_video:
-    #     fps = vid_cap.get(cv.CAP_PROP_FPS)
-    # elif source_from_camera:
-    #     fps = vid_cap.get(cv.CAP_PROP_FPS) # maybe works but maybe not
+    if VIDEO_FROM_CAMERA:
+        video_path = 0  # Default webcam id
+        print("Processing video from camera number ", video_path)
 
-    print("Processing video from:", str_path_video)
-    vid_cap = cv.VideoCapture(str_path_video)
+    else:
+        video_path = str(PATH_VIDEO)
+        print("Processing video from:", video_path)
+
+    vid_cap = cv.VideoCapture(video_path)
     if not vid_cap.isOpened():
-        sys.exit("Error: Unable to open video.")
+        sys.exit("\nError: Unable to open video.")
+
+    # if VIDEO_FROM_CAMERA this could not work
+    video_fps = vid_cap.get(cv.CAP_PROP_FPS)
 
     tracked_stars = {}
     satellite_log = []
@@ -204,6 +221,9 @@ def satellite_detection_test(desired_blinking_freq=SAT_DESIRED_BLINKING_FREQ,
         start_time = perf_counter()
     else:
         cv.namedWindow("Satellite detection", cv.WINDOW_NORMAL)
+
+        if OUTPUT_VIDEO_TO_FILE:
+            output_video = create_export_video_file(vid_cap)
 
     while True:
         success, frame = vid_cap.read()
@@ -229,6 +249,7 @@ def satellite_detection_test(desired_blinking_freq=SAT_DESIRED_BLINKING_FREQ,
 
         if CHECKING_VIDEO_VELOCITY:
             processed_frames += 1
+
         else:
             show_frame = frame.copy()
 
@@ -242,6 +263,9 @@ def satellite_detection_test(desired_blinking_freq=SAT_DESIRED_BLINKING_FREQ,
 
             cv.imshow("Satellite detection", show_frame)
 
+            if OUTPUT_VIDEO_TO_FILE:
+                output_video.write(show_frame)
+
             key = cv.waitKey(wait_time)
 
             if key == ord('q'):
@@ -253,6 +277,9 @@ def satellite_detection_test(desired_blinking_freq=SAT_DESIRED_BLINKING_FREQ,
         print_time_statistics(processed_frames, start_time)
     else:
         export_satellite_log(satellite_log)
+
+        if OUTPUT_VIDEO_TO_FILE:
+            print(f"Video saved on '{str(PATH_OUTPUT_VIDEO)}'")
 
     cv.destroyAllWindows()
 
@@ -356,6 +383,30 @@ def draw_satellite(show_frame,
     )
 
     return show_frame
+
+
+def create_export_video_file(vid_cap):
+    """ Function to create a video file to export the processed frames. """
+
+    width = int(vid_cap.get(cv.CAP_PROP_FRAME_WIDTH))
+    height = int(vid_cap.get(cv.CAP_PROP_FRAME_HEIGHT))
+    fps = int(vid_cap.get(cv.CAP_PROP_FPS))
+    frame_count = int(vid_cap.get(cv.CAP_PROP_FRAME_COUNT))
+
+    print(f"\nVideo format: {width}x{height} px - {fps} fps")
+    print("Number of frames:", frame_count)
+
+    output_video = cv.VideoWriter(
+        str(PATH_OUTPUT_VIDEO),
+        cv.VideoWriter_fourcc(*'mp4v'),
+        fps,
+        (width, height),
+    )
+
+    if not output_video.isOpened():
+        sys.exit("\nError: Unable to create video file.")
+
+    return output_video
 
 
 def export_satellite_log(satellite_log: list[tuple[int, dict]]):
