@@ -20,13 +20,13 @@ __authors__ = ["Jorge Sierra", "Sergio Tabares Hernández"]
 # __contact__ = "mail@example.com"
 # __copyright__ = "Copyright $YEAR, $COMPANY_NAME"
 __credits__ = ["Jorge Sierra", "Sergio Tabares Hernández"]
-__date__ = "2022/03/31"
+__date__ = "2022/06/12"
 __deprecated__ = False
 # __email__ = "mail@example.com"
 # __license__ = "GPLv3"
 __maintainer__ = "Sergio Tabares Hernández"
 __status__ = "Production"
-__version__ = "0.0.4"
+__version__ = "0.0.5"
 
 from collections import defaultdict
 from copy import deepcopy
@@ -46,28 +46,28 @@ from src.utils import time_it, Distance
 
 # * Constants
 THRESHOLD = 50
-PX_SENSITIVITY = 8
 FAST = True
 DISTANCE = 20
-BEST_ALGORITHM_INDEX = 8
 
 SAT_DESIRED_BLINKING_FREQ = 15
 MOVEMENT_THRESHOLD = 2
+PX_SENSITIVITY = 8
 
 PATH_FRAME = Path("./data/frames/video1/frame2000.jpg")
 PATH_VIDEO = Path("./data/videos/video4.mp4")
 PATH_CATALOG = Path("./data/catalog/hygdata_v3.csv")
+PATH_SAT_LOG = Path("./data/logs/satellite_log.csv")
 
 CHECKING_VIDEO_VELOCITY = False
 CHECKING_FRAME_VELOCITY = False
 
 COLOR_CAMERA = True
 
-# * Variables
+# * Global variables
 translator = {}
 pairs = []
 
-# * Decorator
+# * Decorators
 if CHECKING_FRAME_VELOCITY:
     find_stars = time_it(find_stars)
     star_tracker = time_it(star_tracker)
@@ -80,24 +80,17 @@ def main():
 
     # single_frame_test()
 
-    # video_test(algorithm_index=BEST_ALGORITHM_INDEX)
+    # video_test()
 
-    # * comparison of all different find_stars' algorithms
-    # for index in range(1, 9):
-    #     print(f"Video test {index}...")
-    #     video_test(algorithm_index=index)
-
-    blinking_star_test(SAT_DESIRED_BLINKING_FREQ)
+    satellite_detection_test()
 
     # identify_test()
 
 
 def process_image(image,
                   threshold: float = THRESHOLD,
-                  px_sensitivity: int = PX_SENSITIVITY,
                   fast: bool = FAST,
-                  distance: float = DISTANCE,
-                  algorithm_index: int = BEST_ALGORITHM_INDEX):
+                  distance: float = DISTANCE):
     """ Function to process the given image and mark the detected stars. """
 
     if COLOR_CAMERA:
@@ -105,23 +98,15 @@ def process_image(image,
     else:
         gray = image
 
-    stars = find_stars(gray, threshold, px_sensitivity, fast, distance,
-                       algorithm_index)
+    stars = find_stars(gray, threshold, fast, distance)
 
     if not CHECKING_VIDEO_VELOCITY:
-        for x_coord, y_coord in stars:
-            cv.circle(
-                image,
-                center=(int(x_coord), int(y_coord)),
-                radius=PX_SENSITIVITY,
-                color=(0, 0, 100),
-                thickness=2,
-            )
+        image = draw_found_stars(image, stars)
+
     return image
 
 
-def single_frame_test(
-        str_path_frame=str(PATH_FRAME), algorithm_index=BEST_ALGORITHM_INDEX):
+def single_frame_test(str_path_frame=str(PATH_FRAME)):
     """ Function to test the implemented processing image methods with a single
     video frame or image. """
 
@@ -130,7 +115,7 @@ def single_frame_test(
     if image is None:
         sys.exit("Could not read the image.")
 
-    image = process_image(image, algorithm_index=algorithm_index)
+    image = process_image(image)
     print("\n")
 
     cv.imshow(str_path_frame, image)
@@ -138,8 +123,7 @@ def single_frame_test(
     cv.destroyAllWindows()
 
 
-def video_test(
-        str_path_video=str(PATH_VIDEO), algorithm_index=BEST_ALGORITHM_INDEX):
+def video_test(str_path_video=str(PATH_VIDEO)):
     """ Function to test the implemented processing image methods with a whole
     video. """
 
@@ -148,52 +132,47 @@ def video_test(
     if not vid_cap.isOpened():
         sys.exit("Error: Unable to open video.")
 
+    wait_time = 1
+    wait_options = {
+        ord('z'): 1,
+        ord('x'): 100,
+        ord('c'): 1000,
+        ord('v'): 0,
+    }
+
     if CHECKING_VIDEO_VELOCITY:
         processed_frames = 0
         start_time = perf_counter()
+    else:
+        cv.namedWindow(str_path_video, cv.WINDOW_NORMAL)
 
-    wait_time = 1
     while True:
         success, frame = vid_cap.read()
         if not success:
             break
 
-        show_frame = process_image(frame, algorithm_index=algorithm_index)
+        show_frame = process_image(frame)
 
         if CHECKING_VIDEO_VELOCITY:
             processed_frames += 1
         else:
-            cv.namedWindow(str_path_video, cv.WINDOW_NORMAL)
             cv.imshow(str_path_video, show_frame)
 
             key = cv.waitKey(wait_time)
-            if key == ord('z'):
-                wait_time = 1
-            if key == ord('x'):
-                wait_time = 100
-            if key == ord('c'):
-                wait_time = 1000
-            if key == ord('v'):
-                wait_time = 0
+
             if key == ord('q'):
                 break
 
+            wait_time = wait_options.get(key, wait_time)
+
     if CHECKING_VIDEO_VELOCITY:
-        processing_time = perf_counter() - start_time
-
-        if CHECKING_FRAME_VELOCITY:
-            print("\n  *Video process time could not be real",
-                  "if also checking frame process time.*")
-
-        print("  Processed frames:", processed_frames)
-        print("  Time needed:", processing_time)
-        print("  FPS:", processed_frames / processing_time)
-        print()
+        print_time_statistics(processed_frames, start_time)
 
     cv.destroyAllWindows()
 
 
-def blinking_star_test(desired_blinking_freq=10):
+def satellite_detection_test(desired_blinking_freq=SAT_DESIRED_BLINKING_FREQ,
+                             str_path_video=str(PATH_VIDEO)):
     """ Function to test the detection of the blinking star. """
 
     video_fps = 30
@@ -203,152 +182,205 @@ def blinking_star_test(desired_blinking_freq=10):
     # elif source_from_camera:
     #     fps = vid_cap.get(cv.CAP_PROP_FPS) # maybe works but maybe not
 
-    mini_test = False
-    if mini_test:
-        video_frame_paths = [
-            str(Path("./data/images/stellarium-003.png")),
-            str(Path("./data/images/stellarium-004.png")),
-            str(Path("./data/images/stellarium-005.png")),
-            str(Path("./data/images/stellarium-006.png")),
-        ]
+    print("Processing video from:", str_path_video)
+    vid_cap = cv.VideoCapture(str_path_video)
+    if not vid_cap.isOpened():
+        sys.exit("Error: Unable to open video.")
 
-        video_frames = []
-        for frame_path in video_frame_paths:
-            frame = cv.imread(frame_path)
-            if frame is None:
-                sys.exit("Could not read the image.")
-            else:
-                video_frames.append(frame)
+    tracked_stars = {}
+    satellite_log = []
+    next_star_id = 0
 
-    else:
-        str_path_video = str(PATH_VIDEO)
-        vid_cap = cv.VideoCapture(str_path_video)
+    wait_time = 1
+    wait_options = {
+        ord('z'): 1,
+        ord('x'): 100,
+        ord('c'): 1000,
+        ord('v'): 0,
+    }
 
     if CHECKING_VIDEO_VELOCITY:
+        processed_frames = 0
         start_time = perf_counter()
-
-    processed_frames = 0
-    detected_stars = {}
-    next_star_id = 0
-    wait_time = 1
-    satellite_log = []
+    else:
+        cv.namedWindow("Satellite detection", cv.WINDOW_NORMAL)
 
     while True:
-        if mini_test:
-            frame = video_frames[processed_frames % len(video_frames)]
-        else:
-            success, frame = vid_cap.read()
-            if not success:
-                break
+        success, frame = vid_cap.read()
+        if not success:
+            break
 
         if COLOR_CAMERA:
             gray = cv.cvtColor(frame, cv.COLOR_RGB2GRAY)
         else:
             gray = frame
 
-        processed_frames += 1
+        new_star_positions = find_stars(gray, THRESHOLD, FAST, DISTANCE)
 
-        new_star_positions = find_stars(gray, THRESHOLD, PX_SENSITIVITY, FAST,
-                                        DISTANCE, BEST_ALGORITHM_INDEX)
+        tracked_stars, next_star_id = star_tracker(new_star_positions,
+                                                   tracked_stars,
+                                                   desired_blinking_freq,
+                                                   video_fps, next_star_id)
 
-        detected_stars, next_star_id = star_tracker(new_star_positions,
-                                                    detected_stars,
-                                                    desired_blinking_freq,
-                                                    video_fps, next_star_id)
-
-        shooting_stars = detect_shooting_stars(detected_stars,
+        shooting_stars = detect_shooting_stars(tracked_stars,
                                                MOVEMENT_THRESHOLD)
 
-        blinking_star = detect_blinking_star(shooting_stars)
+        satellite = detect_blinking_star(shooting_stars)
 
-        if not CHECKING_VIDEO_VELOCITY:
+        if CHECKING_VIDEO_VELOCITY:
+            processed_frames += 1
+        else:
             show_frame = frame.copy()
 
-            for star in detected_stars.values():
-                cv.circle(
-                    show_frame,
-                    center=(int(star["last_positions"][-1][0]),
-                            int(star["last_positions"][-1][1])),
-                    radius=PX_SENSITIVITY,
-                    color=(0, 0, 100),
-                    # color=star["color"],
-                    thickness=2,
-                )
+            # show_frame = draw_found_stars(show_frame, new_star_positions)
+            show_frame = draw_tracked_stars(show_frame, tracked_stars)
+            show_frame = draw_shooting_stars(show_frame, shooting_stars)
 
-            for star in shooting_stars.values():
-                cv.circle(
-                    show_frame,
-                    center=(int(star["last_positions"][-1][0]),
-                            int(star["last_positions"][-1][1])),
-                    radius=PX_SENSITIVITY,
-                    color=(0, 200, 200),
-                    thickness=2,
-                )
+            if satellite is not None:
+                satellite_log.append(deepcopy(satellite))
+                show_frame = draw_satellite(show_frame, satellite)
 
-            if blinking_star is not None:
-                satellite_log.append(deepcopy(blinking_star))
-
-                cv.circle(
-                    show_frame,
-                    center=(int(blinking_star[1]["last_positions"][-1][0]),
-                            int(blinking_star[1]["last_positions"][-1][1])),
-                    radius=PX_SENSITIVITY,
-                    color=(0, 200, 0),
-                    thickness=2,
-                )
-
-            cv.namedWindow(str_path_video, cv.WINDOW_NORMAL)
-            cv.imshow(str_path_video, show_frame)
+            cv.imshow("Satellite detection", show_frame)
 
             key = cv.waitKey(wait_time)
-            if key == ord('z'):
-                wait_time = 1
-            if key == ord('x'):
-                wait_time = 100
-            if key == ord('c'):
-                wait_time = 1000
-            if key == ord('v'):
-                wait_time = 0
+
             if key == ord('q'):
                 break
 
+            wait_time = wait_options.get(key, wait_time)
+
     if CHECKING_VIDEO_VELOCITY:
-        processing_time = perf_counter() - start_time
-
-        if CHECKING_FRAME_VELOCITY:
-            print("\n  *Video process time could not be real",
-                  "if also checking frame process time.*")
-
-        print("  Processed frames:", processed_frames)
-        print("  Time needed:", processing_time)
-        print("  FPS:", processed_frames / processing_time)
-        print()
+        print_time_statistics(processed_frames, start_time)
+    else:
+        export_satellite_log(satellite_log)
 
     cv.destroyAllWindows()
 
-    if not CHECKING_VIDEO_VELOCITY:
-        file_path = "./satellite_log.csv"
-        with open(file_path, "w", encoding="utf-8-sig") as file:
-            print("id;",
-                  "last_times_detected;",
-                  "lifetime;",
-                  "left_lifetime;",
-                  "detection_confidence;",
-                  "blinking_freq;",
-                  "movement_vector;",
-                  "last_positions;",
-                  file=file)
 
-            for star in satellite_log:
-                print(f"{star[0]};",
-                      f"{star[1]['last_times_detected']};",
-                      f"{star[1]['lifetime']};",
-                      f"{star[1]['left_lifetime']};",
-                      f"{star[1]['detection_confidence']};",
-                      f"{star[1]['blinking_freq']};",
-                      f"{star[1]['movement_vector']};",
-                      f"{star[1]['last_positions']};",
-                      file=file)
+def print_time_statistics(processed_frames: int, start_time: float):
+    """ Function to print processing time statistics. """
+
+    processing_time = perf_counter() - start_time
+
+    if CHECKING_FRAME_VELOCITY:
+        print("\n  *Video process time could not be real",
+              "if also checking frame process time.*")
+
+    print("  Processed frames:", processed_frames)
+    print("  Time needed:", processing_time)
+    print("  FPS:", processed_frames / processing_time)
+    print()
+
+
+def draw_found_stars(show_frame,
+                     found_stars: list[tuple[int, int]],
+                     radius: int = PX_SENSITIVITY,
+                     color: tuple = (0, 0, 100),
+                     thickness: int = 2):
+    """ Function to draw in the given frame a circle around every found
+    star. """
+
+    for star in found_stars:
+        cv.circle(
+            show_frame,
+            center=(int(star[0]), int(star[1])),
+            radius=radius,
+            color=color,
+            thickness=thickness,
+        )
+
+    return show_frame
+
+
+def draw_tracked_stars(show_frame,
+                       tracked_stars: dict[int, dict],
+                       radius: int = PX_SENSITIVITY,
+                       color: tuple = None,
+                       thickness: int = 2):
+    """ Function to draw in the given frame a circle around every tracked
+    star. """
+
+    for star in tracked_stars.values():
+        if color is None:
+            color = (0, 0, 100)
+            # color = star["color"]
+
+        cv.circle(
+            show_frame,
+            center=(int(star["last_positions"][-1][0]),
+                    int(star["last_positions"][-1][1])),
+            radius=radius,
+            color=color,
+            thickness=thickness,
+        )
+
+    return show_frame
+
+
+def draw_shooting_stars(show_frame,
+                        shooting_stars: dict[int, dict],
+                        radius: int = PX_SENSITIVITY,
+                        color: tuple = (0, 200, 200),
+                        thickness: int = 2):
+    """ Function to draw in the given frame a circle around every shooting
+    star. """
+
+    for star in shooting_stars.values():
+        cv.circle(
+            show_frame,
+            center=(int(star["last_positions"][-1][0]),
+                    int(star["last_positions"][-1][1])),
+            radius=radius,
+            color=color,
+            thickness=thickness,
+        )
+
+    return show_frame
+
+
+def draw_satellite(show_frame,
+                   satellite: tuple[int, dict],
+                   radius: int = PX_SENSITIVITY,
+                   color: tuple = (0, 200, 0),
+                   thickness: int = 2):
+    """ Function to draw in the given frame a circle around the satellite
+    detected. """
+
+    cv.circle(
+        show_frame,
+        center=(int(satellite[1]["last_positions"][-1][0]),
+                int(satellite[1]["last_positions"][-1][1])),
+        radius=radius,
+        color=color,
+        thickness=thickness,
+    )
+
+    return show_frame
+
+
+def export_satellite_log(satellite_log: list[tuple[int, dict]]):
+    """ Function to export the satellite log into a file. """
+    with open(str(PATH_SAT_LOG), "w", encoding="utf-8-sig") as file:
+        print("id;",
+              "last_times_detected;",
+              "lifetime;",
+              "left_lifetime;",
+              "detection_confidence;",
+              "blinking_freq;",
+              "movement_vector;",
+              "last_positions;",
+              file=file)
+
+        for star in satellite_log:
+            print(f"{star[0]};",
+                  f"{star[1]['last_times_detected']};",
+                  f"{star[1]['lifetime']};",
+                  f"{star[1]['left_lifetime']};",
+                  f"{star[1]['detection_confidence']};",
+                  f"{star[1]['blinking_freq']};",
+                  f"{star[1]['movement_vector']};",
+                  f"{star[1]['last_positions']};",
+                  file=file)
 
 
 def find_add_candidates(descriptors, descriptor, dic):
@@ -381,7 +413,7 @@ def identify_test():
     else:
         gray = image
 
-    stars = find_stars(gray, THRESHOLD, PX_SENSITIVITY, fast=False)
+    stars = find_stars(gray, THRESHOLD, fast=False)
 
     # Chose a subset
     stars = [(x, y) for x, y in stars

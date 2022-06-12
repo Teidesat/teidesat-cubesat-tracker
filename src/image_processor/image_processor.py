@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 File with the implementation of the image processing functions and star
-detection algorithms.
+detection and tracking algorithms.
 """
 
 from colorsys import hsv_to_rgb
@@ -12,14 +12,15 @@ from time import time
 
 import cv2 as cv
 import numpy as np
-import skimage.feature
 
 # * Constants
 THRESHOLD = 50
-PX_SENSITIVITY = 8
 FAST = True
 DISTANCE = 20
-BEST_ALGORITHM_INDEX = 8
+
+SAT_DESIRED_BLINKING_FREQ = 30
+VIDEO_FPS = 60
+MOVEMENT_THRESHOLD = 2
 
 DEFAULT_LEFT_LIFETIME = 10
 DEFAULT_MOVEMENT_VECTOR = (0, 0)
@@ -33,9 +34,6 @@ MAX_MOVE_DISTANCE = 10
 
 FREQUENCY_THRESHOLD = 3
 MIN_DETECTION_CONFIDENCE = 20
-
-KERNEL_Y = np.array([[1, 2, 1], [0, 0, 0], [-1, -2, -1]])
-KERNEL_X = np.array([[1, 0, -1], [2, 0, -2], [1, 0, -1]])
 
 random.seed(time())
 
@@ -61,207 +59,13 @@ def prune_close_points(indices: list[tuple[int, int]],
     return pruned
 
 
-def find_stars(
-        image,
-        threshold: float = THRESHOLD,
-        px_sensitivity: int = PX_SENSITIVITY,
-        fast: bool = FAST,
-        distance: float = DISTANCE,
-        algorithm_index: int = BEST_ALGORITHM_INDEX) -> list[tuple[int, int]]:
-    """
-    Function to get all the bright points of a given image.
-
-    To do so, you can select one of the following algorithms by specifying its
-    index on the following list:
-
-    1. Sobel filter.
-    2. Adaptive threshold.
-    3. Scikit-Image's Laplacian of Gaussian (LoG).
-    4. Scikit-Image's Difference of Gaussian (DoG).
-    5. Scikit-Image's Determinant of Hessian (DoH).
-    6. OpenCV's Simple Blob Detector.
-    7. OpenCV's Scale-Invariant Feature Transform (SIFT).
-    8. OpenCV's Features from Accelerated Segment Test (FAST).
-    """
-
-    algorithms_list = [
-        sobel_filter,
-        adaptive_threshold,
-        scikit_blob_log,
-        scikit_blob_dog,
-        scikit_blob_doh,
-        opencv_blob,
-        opencv_sift,
-        opencv_fast,
-    ]
-
-    return algorithms_list[algorithm_index - 1](image, threshold,
-                                                px_sensitivity, fast, distance)
-
-
-def sobel_filter(image, threshold: float, px_sensitivity: int, fast: bool,
-                 distance: float) -> list[tuple[int, int]]:
-    """ Sobel filter's implementation for star detection. """
-
-    edges_x = cv.filter2D(image, cv.CV_8U, KERNEL_X)
-    edges_y = cv.filter2D(image, cv.CV_8U, KERNEL_Y)
-    mask = np.minimum(edges_x, edges_y)
-    indices = np.argwhere(mask > threshold)
-
-    if fast:
-        # A) May give two (or more?) detections for one star
-        # B) Not smooth transitions between frames
-
-        # Group stars that are closer
-        indices = np.round(indices / px_sensitivity) * px_sensitivity
-        indices = [(x, y) for y, x in indices]
-
-        return indices
-
-    else:
-        # Same as before but now store the original index to recover later the
-        #  original coordinates
-        # Then prune the positions that are too close
-
-        indices_round = np.round(indices / px_sensitivity) * px_sensitivity
-        indices_round = {(y, x): i for i, (y, x) in enumerate(indices_round)}
-        indices = [(indices[i][1], indices[i][0])
-                   for _, i in indices_round.items()]
-
-        return prune_close_points(indices, distance)
-
-
-def adaptive_threshold(image, threshold: float, px_sensitivity: int,
-                       fast: bool, distance: float) -> list[tuple[int, int]]:
-    """ Adaptive threshold's implementation for star detection. """
-
-    if distance % 2 == 0:
-        distance += 1
-
-    # bnw = cv.adaptiveThreshold(image, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C,
-    #                            cv.THRESH_BINARY, distance, -threshold)
-    bnw = cv.adaptiveThreshold(image, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C,
-                               cv.THRESH_BINARY, 9, -40)
-
-    indices = np.where(bnw)
-    points = zip(indices[1], indices[0])
-
-    if not fast:
-        points = prune_close_points(list(points), distance)
-
-    return points
-
-
-def scikit_blob_log(image, threshold: float, px_sensitivity: int, fast: bool,
-                    distance: float) -> list[tuple[int, int]]:
-    """ Scikit-Image's Laplacian of Gaussian algorithm for image detection. """
-
-    # blobs_log = skimage.feature.blob_log(image, threshold, max_sigma=2)
-    blobs_log = skimage.feature.blob_log(image, threshold=0.075, max_sigma=2)
-    points = np.flip(np.delete(blobs_log, 2, axis=1))
-
-    if not fast:
-        points = prune_close_points(list(points), distance)
-
-    return points
-
-
-def scikit_blob_dog(image, threshold: float, px_sensitivity: int, fast: bool,
-                    distance: float) -> list[tuple[int, int]]:
-    """ Scikit-Image's Difference of Gaussian algorithm for image detection."""
-
-    # blobs_dog = skimage.feature.blob_dog(image, threshold, max_sigma=2)
-    blobs_dog = skimage.feature.blob_dog(image, threshold=0.05, max_sigma=2)
-    points = np.flip(np.delete(blobs_dog, 2, axis=1))
-
-    if not fast:
-        points = prune_close_points(list(points), distance)
-
-    return points
-
-
-def scikit_blob_doh(image, threshold: float, px_sensitivity: int, fast: bool,
-                    distance: float) -> list[tuple[int, int]]:
-    """ Scikit-Image's Determinant of Hessian algorithm for image detection."""
-
-    # blobs_doh = skimage.feature.blob_doh(image, threshold, max_sigma=2)
-    blobs_doh = skimage.feature.blob_doh(image, threshold=0.00075, max_sigma=2)
-    points = np.flip(np.delete(blobs_doh, 2, axis=1))
-
-    if not fast:
-        points = prune_close_points(list(points), distance)
-
-    return points
-
-
-def opencv_blob(image, threshold: float, px_sensitivity: int, fast: bool,
-                distance: float) -> list[tuple[int, int]]:
-    """ OpenCV's Simple Blob Detector algorithm. """
-
-    # Setup Simple Blob Detector parameters.
-    params = cv.SimpleBlobDetector_Params()
-
-    # Change thresholds
-    params.minThreshold = 0
-    params.maxThreshold = 50
-
-    # Filter by Area.
-    params.filterByArea = False
-    # params.minArea = 5
-    # params.maxArea = 20
-
-    # Filter by Circularity
-    # params.filterByCircularity = False
-    # params.minCircularity = 0.7
-    # params.maxCircularity = 1
-
-    # Filter by Convexity
-    # params.filterByConvexity = False
-    # params.minConvexity = 0.87
-
-    # Filter by Inertia
-    # params.filterByInertia = False
-    # params.minInertiaRatio = 0.01
-
-    # Create a detector with the parameters
-    # OLD: detector = cv.SimpleBlobDetector(params)
-    detector = cv.SimpleBlobDetector_create(params)
-
-    # Detect blobs.
-    keypoints = detector.detect(image)
-    points = [keypoint.pt for keypoint in keypoints]
-
-    if not fast:
-        points = prune_close_points(list(points), distance)
-
-    return points
-
-
-def opencv_sift(image, threshold: float, px_sensitivity: int, fast: bool,
-                distance: float) -> list[tuple[int, int]]:
-    """ OpenCV's Scale-Invariant Feature Transform (SIFT) algorithm for star
-    detection. """
-
-    sift = cv.SIFT_create(nOctaveLayers=1,
-                          contrastThreshold=0.1,
-                          edgeThreshold=3,
-                          sigma=0.2)
-    keypoints = sift.detect(image, None)
-    points = [keypoint.pt for keypoint in keypoints]
-
-    if not fast:
-        points = prune_close_points(list(points), distance)
-
-    return points
-
-
-def opencv_fast(image, threshold: float, px_sensitivity: int, fast: bool,
-                distance: float) -> list[tuple[int, int]]:
-    """ OpenCV's Features from Accelerated Segment Test (FAST) algorithm for
-    star detection. """
+def find_stars(image,
+               threshold: float = THRESHOLD,
+               fast: bool = FAST,
+               distance: float = DISTANCE) -> list[tuple[int, int]]:
+    """ Function to get all the bright points of a given image. """
 
     fast_alg = cv.FastFeatureDetector_create(threshold=threshold)
-    # fast_alg = cv.FastFeatureDetector_create(threshold=40)
     keypoints = fast_alg.detect(image, None)
     points = [keypoint.pt for keypoint in keypoints]
 
@@ -273,8 +77,8 @@ def opencv_fast(image, threshold: float, px_sensitivity: int, fast: bool,
 
 def star_tracker(star_positions: list[tuple[int, int]],
                  detected_stars: dict[int, dict],
-                 desired_blinking_freq: float = 30,
-                 fps: float = 60,
+                 desired_blinking_freq: float = SAT_DESIRED_BLINKING_FREQ,
+                 video_fps: float = VIDEO_FPS,
                  next_star_id: int = 0) -> tuple[dict[int, dict], int]:
     """ Function to keep track of the detected stars maintaining its data. """
 
@@ -284,13 +88,13 @@ def star_tracker(star_positions: list[tuple[int, int]],
             star_positions,
             detected_stars,
             desired_blinking_freq,
-            fps,
+            video_fps,
         )
 
     detected_stars, stop_range_id = add_remaining_stars(
         star_positions,
         detected_stars,
-        fps,
+        video_fps,
         next_star_id,
     )
 
@@ -298,7 +102,7 @@ def star_tracker(star_positions: list[tuple[int, int]],
 
 
 def add_remaining_stars(star_positions: list[tuple[int, int]],
-                        detected_stars: dict[int, dict], fps: float,
+                        detected_stars: dict[int, dict], video_fps: float,
                         next_star_id: int) -> tuple[dict[int, dict], int]:
     """ Function to add the remaining stars as new ones into de stars dict. """
 
@@ -312,7 +116,7 @@ def add_remaining_stars(star_positions: list[tuple[int, int]],
                 "last_times_detected": [1],
                 "lifetime": 1,
                 "left_lifetime": DEFAULT_LEFT_LIFETIME,
-                "blinking_freq": fps,
+                "blinking_freq": video_fps,
                 "detection_confidence": 0,
                 "movement_vector": DEFAULT_MOVEMENT_VECTOR,
                 "color": [v * 255 for v in hsv_to_rgb(random.random(), 1, 1)],
@@ -322,8 +126,13 @@ def add_remaining_stars(star_positions: list[tuple[int, int]],
     return detected_stars, stop_range_id
 
 
-def update_star_info(old_star, star_positions, detected_stars,
-                     desired_blinking_freq, fps):
+def update_star_info(
+    old_star: tuple[int, dict],
+    star_positions: list[tuple[int, int]],
+    detected_stars: dict[int, dict],
+    desired_blinking_freq: float,
+    video_fps: float,
+) -> tuple[list[tuple[int, int]], dict[int, dict]]:
     """ Function to update a star's information. """
 
     old_star_id, old_star_info = old_star
@@ -351,7 +160,8 @@ def update_star_info(old_star, star_positions, detected_stars,
     movement_vector = get_movement_vector(last_positions)
 
     lifetime = old_star_info["lifetime"] + 1
-    blinking_freq = fps * (sum(last_times_detected) / len(last_times_detected))
+    blinking_freq = video_fps * (sum(last_times_detected) /
+                                 len(last_times_detected))
 
     detection_confidence = old_star_info["detection_confidence"]
     if abs(blinking_freq - desired_blinking_freq) < FREQUENCY_THRESHOLD:
@@ -400,7 +210,7 @@ def get_new_star_position(star_positions: list[tuple[int, int]],
         return new_star_pos
 
 
-def get_movement_vector(last_positions):
+def get_movement_vector(last_positions: list[tuple[int, int]]):
     """ Function to calculate the star movement vector. """
 
     if len(last_positions) < MIN_HISTORY_LEN:
@@ -429,8 +239,9 @@ def get_movement_vector(last_positions):
     return DEFAULT_MOVEMENT_VECTOR
 
 
-def detect_shooting_stars(detected_stars: dict[int, dict],
-                          movement_threshold: float = 2) -> dict[int, dict]:
+def detect_shooting_stars(
+        detected_stars: dict[int, dict],
+        movement_threshold: float = MOVEMENT_THRESHOLD) -> dict[int, dict]:
     """ Function to detect which of the found stars are shooting stars or
     satellites. """
 
