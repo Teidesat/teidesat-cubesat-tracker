@@ -9,11 +9,14 @@ from colorsys import hsv_to_rgb
 from math import inf, dist
 import random
 from time import time
+from typing import Union, Optional
 
 import cv2 as cv
 import numpy as np
 
 # * Constants
+from src.utils import Point, Star
+
 THRESHOLD = 50
 FAST = True
 DISTANCE = 20
@@ -38,232 +41,104 @@ MIN_DETECTION_CONFIDENCE = 20
 random.seed(time())
 
 
-def prune_close_points(indices: list[tuple[int, int]],
-                       min_distance: float) -> list[tuple[int, int]]:
-    """ Function to prune close points because of their probabilities of being
-    a duplicate reference to the same element of an image. """
-
-    pruned = []
-
-    for i, point_1 in enumerate(indices):
-        duplicate = False
-
-        for point_2 in indices[i + 1:]:
-            if dist(point_1, point_2) < min_distance:
-                duplicate = True
-                break
-
-        if not duplicate:
-            pruned.append(point_1)
-
-    return pruned
+def prune_close_points(points: list[Point], min_dist_sq: float) -> list[Point]:
+    """ Prune close points since they have a high probability of being an image artifact of the same star """
+    return [
+        p1 for i, p1 in enumerate(points) if
+        all(p1.sq_distance(p2) > min_dist_sq for p2 in points[i+1:])
+    ]
 
 
-def find_stars(image,
-               threshold: float = THRESHOLD,
-               fast: bool = FAST,
-               distance: float = DISTANCE) -> list[tuple[int, int]]:
+fast_detector = cv.FastFeatureDetector_create(threshold=50)
+
+
+def find_stars(image, min_dist_sq=1., fast=True) -> list[Point]:
     """ Function to get all the bright points of a given image. """
 
-    fast_alg = cv.FastFeatureDetector_create(threshold=threshold)
-    keypoints = fast_alg.detect(image, None)
-    points = [keypoint.pt for keypoint in keypoints]
-
-    if not fast:
-        points = prune_close_points(points, distance)
-
-    return points
+    points = [Point(x=keypoint.pt[0], y=keypoint.pt[1]) for keypoint in fast_detector.detect(image, None)]
+    return points if fast else prune_close_points(points, min_dist_sq)
 
 
-def star_tracker(star_positions: list[tuple[int, int]],
-                 detected_stars: dict[int, dict],
-                 desired_blinking_freq: float = SAT_DESIRED_BLINKING_FREQ,
-                 video_fps: float = VIDEO_FPS,
-                 next_star_id: int = 0) -> tuple[dict[int, dict], int]:
-    """ Function to keep track of the detected stars maintaining its data. """
+def track_stars(star_positions: list[Point], detected_stars: dict[int, Star], video_fps: float, desired_blinking_freq: float):
+    """ Keep track of the detected stars maintaining its data. """
 
-    for old_star in detected_stars.copy().items():
-        star_positions, detected_stars = update_star_info(
-            old_star,
-            star_positions,
-            detected_stars,
-            desired_blinking_freq,
-            video_fps,
-        )
+    # Correlate new detections with previous detected stars
+    new_detected_stars = {}
+    for star_id, star in detected_stars.items():
+        detected_pos = get_new_star_position(star_positions, star)
+        star.add_detection(video_fps, desired_blinking_freq, detected_pos)
+        if star.lifetime > 0:
+            # TODO add expected position to history anyway if we dont find the star ?
+            new_detected_stars[star_id] = star
+            if detected_pos:
+                star_positions.remove(detected_pos)
 
-    detected_stars, stop_range_id = add_remaining_stars(
-        star_positions,
-        detected_stars,
-        video_fps,
-        next_star_id,
-    )
-
-    return detected_stars, stop_range_id
+    # Add new stars found
+    for star_position in star_positions:
+        star = Star()
+        star.add_detection(video_fps, desired_blinking_freq, star_position)
+        detected_stars[star.star_id] = star
 
 
-def add_remaining_stars(star_positions: list[tuple[int, int]],
-                        detected_stars: dict[int, dict], video_fps: float,
-                        next_star_id: int) -> tuple[dict[int, dict], int]:
-    """ Function to add the remaining stars as new ones into de stars dict. """
+def get_new_star_position(star_positions: list[Point], star_info: Star, max_move_sq_distance=100.) -> Optional[tuple[Point]]:
+    """ Find the closest point in range to the expected star position for a list of possible candidate positions. """
+    expected_pos = star_info.expected_pos()
+    star_pos = None
+    smallest_sq_dist = inf
 
-    stop_range_id = next_star_id + len(star_positions)
-    star_ids = range(next_star_id, stop_range_id)
+    for point in star_positions:
+        point_sq_dist = point.sq_distance(expected_pos)
 
-    for star_id, star_position in zip(star_ids, star_positions):
-        detected_stars.update({
-            star_id: {
-                "last_positions": [star_position],
-                "last_times_detected": [1],
-                "lifetime": 1,
-                "left_lifetime": DEFAULT_LEFT_LIFETIME,
-                "blinking_freq": video_fps,
-                "detection_confidence": 0,
-                "movement_vector": DEFAULT_MOVEMENT_VECTOR,
-                "color": [v * 255 for v in hsv_to_rgb(random.random(), 1, 1)],
-            }
-        })
+        if point_sq_dist < smallest_sq_dist:
+            smallest_sq_dist = point_sq_dist
+            star_pos = point
 
-    return detected_stars, stop_range_id
+    return None if (smallest_sq_dist > max_move_sq_distance) else star_pos
 
 
-def update_star_info(
-    old_star: tuple[int, dict],
-    star_positions: list[tuple[int, int]],
-    detected_stars: dict[int, dict],
-    desired_blinking_freq: float,
-    video_fps: float,
-) -> tuple[list[tuple[int, int]], dict[int, dict]]:
-    """ Function to update a star's information. """
+def get_speed_vec(pos_history: list[Point], remove_outliers=True):
+    """ Calculate the star movement vector. """
 
-    old_star_id, old_star_info = old_star
+    if len(pos_history) < MIN_HISTORY_LEN:
+        return Point(0, 0)
 
-    new_star_pos = get_new_star_position(star_positions, old_star_info)
+    # Get speed vectors average
+    speed_vecs = [pos_history[i + 1] - pos_history[i] for i in range(len(pos_history) - 1)]
+    mean_speed = Point(
+            x=np.average(speed_vec.x for speed_vec in speed_vecs),
+            y=np.average(speed_vec.y for speed_vec in speed_vecs))
 
-    if new_star_pos is None:
-        if old_star_info["left_lifetime"] == 0:
-            detected_stars.pop(old_star_id)
-            return star_positions, detected_stars
+    if not remove_outliers:
+        return mean_speed
 
-        old_star_info["last_times_detected"].append(0)
-        left_lifetime = old_star_info["left_lifetime"] - 1
-
-    else:
-        star_positions.remove(new_star_pos)
-        old_star_info["last_positions"].append(new_star_pos)
-
-        old_star_info["last_times_detected"].append(1)
-        left_lifetime = DEFAULT_LEFT_LIFETIME
-
-    last_positions = old_star_info["last_positions"][-MAX_HISTORY_LEN:]
-    last_times_detected = old_star_info["last_times_detected"][
-        -MAX_HISTORY_LEN:]
-    movement_vector = get_movement_vector(last_positions)
-
-    lifetime = old_star_info["lifetime"] + 1
-    blinking_freq = video_fps * (sum(last_times_detected) /
-                                 len(last_times_detected))
-
-    detection_confidence = old_star_info["detection_confidence"]
-    if abs(blinking_freq - desired_blinking_freq) < FREQUENCY_THRESHOLD:
-        detection_confidence += 1
-    else:
-        detection_confidence -= 2
-
-    detected_stars[old_star_id].update({
-        "last_positions": last_positions,
-        "last_times_detected": last_times_detected,
-        "lifetime": lifetime,
-        "left_lifetime": left_lifetime,
-        "blinking_freq": blinking_freq,
-        "detection_confidence": detection_confidence,
-        "movement_vector": movement_vector,
-    })
-
-    return star_positions, detected_stars
-
-
-def get_new_star_position(star_positions: list[tuple[int, int]],
-                          old_star_info: dict) -> tuple[int, int] | None:
-    """ Function to get the new position of a given star. """
-
-    expected_star_pos = (old_star_info["last_positions"][-1][0] +
-                         old_star_info["movement_vector"][0],
-                         old_star_info["last_positions"][-1][1] +
-                         old_star_info["movement_vector"][1])
-
-    try:
-        star_positions.index(expected_star_pos)
-        return expected_star_pos
-
-    except ValueError:
-        new_star_pos = None
-        best_candidate_dist = inf
-
-        for current_star_pos in star_positions:
-            current_pair_dist = dist(expected_star_pos, current_star_pos)
-
-            if (current_pair_dist < MAX_MOVE_DISTANCE
-                    and best_candidate_dist > current_pair_dist):
-                best_candidate_dist = current_pair_dist
-                new_star_pos = current_star_pos
-
-        return new_star_pos
-
-
-def get_movement_vector(last_positions: list[tuple[int, int]]):
-    """ Function to calculate the star movement vector. """
-
-    if len(last_positions) < MIN_HISTORY_LEN:
-        return DEFAULT_MOVEMENT_VECTOR
-
-    movement_vectors = [
-        (point_2[0] - point_1[0], point_2[1] - point_1[1])
-        for point_1, point_2 in zip(last_positions, last_positions[1:])
+    # If we want to remove outliers, remove those that are too far from the average
+    speed_vecs = [
+        speed_vec for speed_vec in speed_vecs if mean_speed.sq_distance(speed_vec) < MAX_OUTLIER_THRESHOLD
     ]
 
-    m_v_len = len(movement_vectors)
-    mean_vector = [sum(values) / m_v_len for values in zip(*movement_vectors)]
+    # If we do still have some points, return the average of those
+    if speed_vecs:
+        return Point(
+            x=np.average(speed_vec.x for speed_vec in speed_vecs),
+            y=np.average(speed_vec.y for speed_vec in speed_vecs))
 
-    if not REMOVE_OUTLIERS:
-        return mean_vector
-
-    filtered_vectors = [
-        current_vector for current_vector in movement_vectors
-        if dist(mean_vector, current_vector) < MAX_OUTLIER_THRESHOLD
-    ]
-
-    f_v_len = len(filtered_vectors)
-    if f_v_len != 0:
-        return [sum(values) / f_v_len for values in zip(*filtered_vectors)]
-
-    return DEFAULT_MOVEMENT_VECTOR
+    return Point(0, 0)
 
 
-def detect_shooting_stars(
-        detected_stars: dict[int, dict],
-        movement_threshold: float = MOVEMENT_THRESHOLD) -> dict[int, dict]:
-    """ Function to detect which of the found stars are shooting stars or
-    satellites. """
-
-    return dict(
-        filter(
-            lambda star:
-            (np.linalg.norm(star[1]["movement_vector"]) >= movement_threshold),
-            detected_stars.items()))
+def detect_shooting_stars(detected_stars: dict[int, Star], sq_movement_threshold: float = 2 ** 2) -> dict[int, Star]:
+    """ Detect which of the found stars are shooting stars or satellites. """
+    return {k: v for k, v in detected_stars.items() if v.speed_vec.sq_distance() >= sq_movement_threshold}
 
 
-def detect_blinking_star(
-        detected_stars: dict[int, dict]) -> tuple[int, dict] | None:
-    """ Function to detect which one of the found stars is blinking the closest
+def detect_blinking_star(detected_stars: dict[int, Star], min_detect_confidence=20) -> Optional[Star]:
+    """ Detect which one of the found stars is blinking the closest
     to the desired frequency. """
 
-    blinking_star = max(
-        detected_stars.items(),
-        key=lambda star: star[1]["detection_confidence"],
+    blinking_star: Star = max(
+        detected_stars.values(),
+        key=lambda star: star.detection_confidence,
         default=None,
     )
 
-    if ((blinking_star is not None) and
-        (blinking_star[1]["detection_confidence"] > MIN_DETECTION_CONFIDENCE)):
-        return blinking_star
-    return None
+    return blinking_star \
+        if (blinking_star is not None and blinking_star.detection_confidence > min_detect_confidence) else None

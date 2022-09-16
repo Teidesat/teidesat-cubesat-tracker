@@ -1,10 +1,76 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """ Module docstring """  # ToDo: redact docstring
+from __future__ import annotations
 
+from dataclasses import dataclass, field
 from time import perf_counter
+from typing import ClassVar
 
 import numpy as np
+
+
+@dataclass
+class Point:
+    x: float = 0
+    y: float = 0
+
+    def __sub__(self, other: Point):
+        return Point(x=self.x - other.x, y=self.y - other.y)
+
+    def __add__(self, other: Point):
+        return Point(x=self.x + other.x, y=self.y + other.y)
+
+    def manhattan_distance(self, point: Point = None):
+        return abs(self.x) + abs(self.x) if point is None else abs(self.x - point.x) + abs(self.x - point.y)
+
+    def sq_distance(self, point: Point = None):
+        return self.x ** 2 + self.x ** 2 if point is None else (self.x - point.x) ** 2 + (self.x - point.y) ** 2
+
+
+@dataclass
+class Star:
+    star_id: int = field(init=False)
+    pos_history: list[Point] = field(default_factory=list)
+    detection_history: list[int] = field(default_factory=list)
+    detection_confidence: float = 0
+    blinking_freq: float = 0
+    speed_vec: Point = field(default_factory=Point)
+    lifetime: float = 10.
+
+    default_lifetime: ClassVar[float] = 10.
+    next_star_id: ClassVar[int] = 0
+
+    def __post_init__(self):
+        self.star_id = Star.next_star_id
+        Star.next_star_id += 1
+
+    @property
+    def position(self):
+        return self.pos_history[-1] if self.pos_history else Point(0, 0)
+
+    def expected_pos(self):
+        return self.pos_history[-1] + self.speed_vec
+
+    def remove_old_history(self, max_history_length=20):
+        self.pos_history = self.pos_history[-max_history_length:]
+        self.detection_history = self.detection_history[-max_history_length:]
+
+    def add_detection(self, video_fps: float, desired_blinking_freq: float, pos: Point = None, freq_threshold=3.):
+        if pos is None:
+            self.detection_history.append(0)
+            self.lifetime -= 1
+        else:
+            self.detection_history.append(1)
+            self.pos_history.append(pos)
+            self.lifetime = self.default_lifetime
+
+        self.remove_old_history()
+        self.blinking_freq = video_fps * sum(self.detection_history) / len(self.detection_history)
+        if abs(self.blinking_freq - desired_blinking_freq) < freq_threshold:
+            self.detection_confidence += 1
+        else:
+            self.detection_confidence -= 2
 
 
 def time_it(func):

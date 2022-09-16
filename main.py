@@ -39,19 +39,18 @@ import cv2 as cv
 import numpy as np
 
 from src.catalog.star_catalog import StarCatalog
-from src.image_processor.image_processor import (find_stars, star_tracker,
-                                                 detect_blinking_star,
-                                                 detect_shooting_stars)
+from src.image_processor.image_processor import find_stars, track_stars, detect_blinking_star, detect_shooting_stars
 from src.image_processor.star_descriptor import StarDescriptor
-from src.utils import time_it, Distance
+from src.utils import time_it, Distance, Star
 
 # * Constants
 THRESHOLD = 50
 FAST = True
 DISTANCE = 20
+DISTANCE_SQ = 20 ** 2
 
 SAT_DESIRED_BLINKING_FREQ = 15
-MOVEMENT_THRESHOLD = 2
+SQ_MOVEMENT_THRESHOLD = 2 ** 2
 PX_SENSITIVITY = 8
 
 PATH_FRAME = Path("./data/frames/video1/frame2000.jpg")
@@ -63,7 +62,6 @@ CHECKING_VIDEO_VELOCITY = False
 CHECKING_FRAME_VELOCITY = False
 
 COLOR_CAMERA = True
-VIDEO_FROM_CAMERA = False
 
 OUTPUT_VIDEO_TO_FILE = True
 PATH_OUTPUT_VIDEO = Path("./data/videos/video_output_" +
@@ -76,21 +74,9 @@ pairs = []
 # * Decorators
 if CHECKING_FRAME_VELOCITY:
     find_stars = time_it(find_stars)
-    star_tracker = time_it(star_tracker)
+    track_stars = time_it(track_stars)
     detect_shooting_stars = time_it(detect_shooting_stars)
     detect_blinking_star = time_it(detect_blinking_star)
-
-
-def main():
-    """ Main function to start the program execution. """
-
-    # single_frame_test()
-
-    # video_test()
-
-    satellite_detection_test()
-
-    # identify_test()
 
 
 def process_image(image,
@@ -186,22 +172,13 @@ def video_test(str_path_video=str(PATH_VIDEO)):
     cv.destroyAllWindows()
 
 
-def satellite_detection_test(desired_blinking_freq=SAT_DESIRED_BLINKING_FREQ):
+def satellite_detection_test(video_path: Path, sat_blinking_freq: int, use_grayscale=True):
     """ Function to test the detection of the blinking star. """
 
-    if VIDEO_FROM_CAMERA:
-        video_path = 0  # Default webcam id
-        print("Processing video from camera number ", video_path)
-
-    else:
-        video_path = str(PATH_VIDEO)
-        print("Processing video from:", video_path)
-
-    vid_cap = cv.VideoCapture(video_path)
+    vid_cap = cv.VideoCapture(str(video_path))
     if not vid_cap.isOpened():
         sys.exit("\nError: Unable to open video.")
 
-    # if VIDEO_FROM_CAMERA this could not work
     video_fps = vid_cap.get(cv.CAP_PROP_FPS)
 
     tracked_stars = {}
@@ -216,70 +193,61 @@ def satellite_detection_test(desired_blinking_freq=SAT_DESIRED_BLINKING_FREQ):
         ord('v'): 0,
     }
 
-    if CHECKING_VIDEO_VELOCITY:
-        processed_frames = 0
-        start_time = perf_counter()
-    else:
-        cv.namedWindow("Satellite detection", cv.WINDOW_NORMAL)
+    # if CHECKING_VIDEO_VELOCITY:
+    #     processed_frames = 0
+    #     start_time = perf_counter()
+    # else:
 
-        if OUTPUT_VIDEO_TO_FILE:
-            output_video = create_export_video_file(vid_cap)
+    cv.namedWindow("Satellite detection", cv.WINDOW_NORMAL)
+
+    # if OUTPUT_VIDEO_TO_FILE:
+    #     output_video = create_export_video_file(vid_cap)
 
     while True:
         success, frame = vid_cap.read()
         if not success:
             break
 
-        if COLOR_CAMERA:
-            gray = cv.cvtColor(frame, cv.COLOR_RGB2GRAY)
-        else:
-            gray = frame
+        frame = cv.cvtColor(frame, cv.COLOR_RGB2GRAY) if use_grayscale else frame
 
-        new_star_positions = find_stars(gray, THRESHOLD, FAST, DISTANCE)
-
-        tracked_stars, next_star_id = star_tracker(new_star_positions,
-                                                   tracked_stars,
-                                                   desired_blinking_freq,
-                                                   video_fps, next_star_id)
-
-        shooting_stars = detect_shooting_stars(tracked_stars,
-                                               MOVEMENT_THRESHOLD)
-
+        star_positions = find_stars(frame, DISTANCE_SQ, FAST)
+        track_stars(star_positions, tracked_stars, video_fps, sat_blinking_freq)
+        shooting_stars = detect_shooting_stars(tracked_stars, SQ_MOVEMENT_THRESHOLD)
         satellite = detect_blinking_star(shooting_stars)
 
-        if CHECKING_VIDEO_VELOCITY:
-            processed_frames += 1
+        # if CHECKING_VIDEO_VELOCITY:
+        #     processed_frames += 1
+        #
+        # else:
+        show_frame = frame.copy()
 
-        else:
-            show_frame = frame.copy()
+        # show_frame = draw_found_stars(show_frame, new_star_positions)
+        show_frame = draw_tracked_stars(show_frame, tracked_stars)
+        show_frame = draw_shooting_stars(show_frame, shooting_stars)
 
-            # show_frame = draw_found_stars(show_frame, new_star_positions)
-            show_frame = draw_tracked_stars(show_frame, tracked_stars)
-            show_frame = draw_shooting_stars(show_frame, shooting_stars)
+        if satellite is not None:
+            # satellite_log.append(deepcopy(satellite))
+            show_frame = draw_satellite(show_frame, satellite)
 
-            if satellite is not None:
-                satellite_log.append(deepcopy(satellite))
-                show_frame = draw_satellite(show_frame, satellite)
+        cv.imshow("Satellite detection", show_frame)
 
-            cv.imshow("Satellite detection", show_frame)
+        # if OUTPUT_VIDEO_TO_FILE:
+        #     output_video.write(show_frame)
 
-            if OUTPUT_VIDEO_TO_FILE:
-                output_video.write(show_frame)
+        key = cv.waitKey(wait_time)
 
-            key = cv.waitKey(wait_time)
+        if key == ord('q'):
+            break
 
-            if key == ord('q'):
-                break
+        wait_time = wait_options.get(key, wait_time)
 
-            wait_time = wait_options.get(key, wait_time)
+    # if CHECKING_VIDEO_VELOCITY:
+    #     print_time_statistics(processed_frames, start_time)
+    # else:
+    export_satellite_log(satellite_log)
 
-    if CHECKING_VIDEO_VELOCITY:
-        print_time_statistics(processed_frames, start_time)
-    else:
-        export_satellite_log(satellite_log)
-
-        if OUTPUT_VIDEO_TO_FILE:
-            print(f"Video saved on '{str(PATH_OUTPUT_VIDEO)}'")
+    # if OUTPUT_VIDEO_TO_FILE:
+    #     print(f"Video saved on '{str(PATH_OUTPUT_VIDEO)}'")
 
     cv.destroyAllWindows()
 
@@ -320,7 +288,7 @@ def draw_found_stars(show_frame,
 
 
 def draw_tracked_stars(show_frame,
-                       tracked_stars: dict[int, dict],
+                       tracked_stars: dict[int, Star],
                        radius: int = PX_SENSITIVITY,
                        color: tuple = None,
                        thickness: int = 2):
@@ -334,8 +302,8 @@ def draw_tracked_stars(show_frame,
 
         cv.circle(
             show_frame,
-            center=(int(star["last_positions"][-1][0]),
-                    int(star["last_positions"][-1][1])),
+            center=(int(star.pos_history[-1].x),
+                    int(star.pos_history[-1].y)),
             radius=radius,
             color=color,
             thickness=thickness,
@@ -345,7 +313,7 @@ def draw_tracked_stars(show_frame,
 
 
 def draw_shooting_stars(show_frame,
-                        shooting_stars: dict[int, dict],
+                        shooting_stars: dict[int, Star],
                         radius: int = PX_SENSITIVITY,
                         color: tuple = (0, 200, 200),
                         thickness: int = 2):
@@ -355,8 +323,8 @@ def draw_shooting_stars(show_frame,
     for star in shooting_stars.values():
         cv.circle(
             show_frame,
-            center=(int(star["last_positions"][-1][0]),
-                    int(star["last_positions"][-1][1])),
+            center=(int(star.pos_history[-1].x),
+                    int(star.pos_history[-1].y)),
             radius=radius,
             color=color,
             thickness=thickness,
@@ -366,7 +334,7 @@ def draw_shooting_stars(show_frame,
 
 
 def draw_satellite(show_frame,
-                   satellite: tuple[int, dict],
+                   satellite: Star,
                    radius: int = PX_SENSITIVITY,
                    color: tuple = (0, 200, 0),
                    thickness: int = 2):
@@ -375,8 +343,8 @@ def draw_satellite(show_frame,
 
     cv.circle(
         show_frame,
-        center=(int(satellite[1]["last_positions"][-1][0]),
-                int(satellite[1]["last_positions"][-1][1])),
+        center=(int(satellite.pos_history[-1].x),
+                int(satellite.pos_history[-1].y)),
         radius=radius,
         color=color,
         thickness=thickness,
@@ -526,70 +494,8 @@ def identify_test():
     for key, value in translator.items():
         print(f"[{key}, {value}]")
 
-    # print("Candidates")
-    # for k, v in candidates.items():
-    #     print(k)
-    #     for k, v in v.items():
-    #         s = [o[0] for o in values]
-    #         i = s.index(k[0])
-    #         print(' ', k, v, names[i])
-    # s = np.array([desc.rel_dist for desc in descs_found])
-    # i = np.argsort(s)
-    # for desc in np.array(descs_found)[i]:
-    #     print(desc)
-    # for i, v in enumerate(values):
-    #     print(f"{names[i]} ({v[0]}, {v[1]})")
-    # s = np.array([desc.rel_dist for desc in descs_original])
-    # i = np.argsort(s)
-    # for desc in np.array(descs_original)[i]:
-    #     print(desc)
-
-    # values = [(cat.stars["theta"][i][0], cat.stars["phi"][i][0]) for i in indices]
-    # build_descriptors(values, lambda a, b: linear_distances(a[0], b[0], a[1], b[1]), r=256)
-
-    # dist = {}
-    # for i in range(len(indices)):
-    #     for j in range(i + 1, len(indices)):
-    #         n = indices[i]
-    #         m = indices[j]
-    #         dist[(j, i)] = linear_distances(cat.stars["theta"][m],
-    #                                         cat.stars["theta"][n],
-    #                                         cat.stars["phi"][m],
-    #                                         cat.stars["phi"][n])
-
-    # print(dist)
-    #
-    # keys = list(dist.keys())
-    # for i in range(len(dist)):
-    #     for j in range(len(dist)):
-    #         if i != j:
-    #             n = keys[i]
-    #             m = keys[j]
-    #             print(f"{n} / {m} = {dist[n] / dist[m]}")
-    #
-    # r_dist = {}
-    # for i in range(len(stars)):
-    #     for j in range(i + 1, len(stars)):
-    #         dx = abs(stars[i][0] - stars[j][0])
-    #         dy = abs(stars[i][1] - stars[j][1])
-    #         r_dist[(j, i)] = np.sqrt(dx*dx + dy*dy)
-    #
-    # print(r_dist)
-    #
-    # keys = list(r_dist.keys())
-    # for i in range(len(r_dist)):
-    #     for j in range(len(r_dist)):
-    #         if i != j:
-    #             n = keys[i]
-    #             m = keys[j]
-    #             print(f"{n} / {m} = {r_dist[n] / r_dist[m]}")
-    #
-    #
-    # for x, y in stars:
-    #     cv.circle(image, (int(x), int(y)), 10, color=(0, 0, 100), thickness=1)
-    # cv.imshow(str(PATH_VIDEO), image)
-    # cv.waitKey(0)
-
 
 if __name__ == "__main__":
-    main()
+    satellite_detection_test(
+        video_path=Path("./data/videos/video4.mp4"),  # use 0 for webcam
+        sat_blinking_freq=15)
