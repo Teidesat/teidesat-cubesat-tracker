@@ -9,6 +9,7 @@ from colorsys import hsv_to_rgb
 from math import inf, dist
 import random
 from time import time
+from typing import Optional
 
 import cv2 as cv
 import numpy as np
@@ -183,7 +184,7 @@ def update_star_info(
 
 
 def get_new_star_position(star_positions: list[tuple[int, int]],
-                          old_star_info: dict) -> tuple[int, int] | None:
+                          old_star_info: dict) -> Optional[tuple[int, int]]:
     """ Function to get the new position of a given star. """
 
     expected_star_pos = (old_star_info["last_positions"][-1][0] +
@@ -253,7 +254,7 @@ def detect_shooting_stars(
 
 
 def detect_blinking_star(
-        detected_stars: dict[int, dict]) -> tuple[int, dict] | None:
+        detected_stars: dict[int, dict]) -> Optional[tuple[int, dict]]:
     """ Function to detect which one of the found stars is blinking the closest
     to the desired frequency. """
 
