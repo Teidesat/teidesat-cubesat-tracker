@@ -11,7 +11,6 @@ import random
 from time import time
 from typing import Optional
 
-import cv2 as cv
 import numpy as np
 
 # * Constants
@@ -60,14 +59,13 @@ def prune_close_points(indices: list[tuple[int, int]],
     return pruned
 
 
-def find_stars(image,
-               threshold: float = THRESHOLD,
-               fast: bool = FAST,
-               distance: float = DISTANCE) -> list[tuple[int, int]]:
+def detect_stars(image,
+                 star_detector,
+                 fast: bool = FAST,
+                 distance: float = DISTANCE) -> list[tuple[int, int]]:
     """ Function to get all the bright points of a given image. """
 
-    fast_alg = cv.FastFeatureDetector_create(threshold=threshold)
-    keypoints = fast_alg.detect(image, None)
+    keypoints = star_detector.detect(image, None)
     points = [keypoint.pt for keypoint in keypoints]
 
     if not fast:
@@ -76,11 +74,11 @@ def find_stars(image,
     return points
 
 
-def star_tracker(star_positions: list[tuple[int, int]],
-                 detected_stars: dict[int, dict],
-                 desired_blinking_freq: float = SAT_DESIRED_BLINKING_FREQ,
-                 video_fps: float = VIDEO_FPS,
-                 next_star_id: int = 0) -> tuple[dict[int, dict], int]:
+def track_stars(star_positions: list[tuple[int, int]],
+                detected_stars: dict[int, dict],
+                desired_blinking_freq: float = SAT_DESIRED_BLINKING_FREQ,
+                video_fps: float = VIDEO_FPS,
+                next_star_id: int = 0) -> tuple[dict[int, dict], int]:
     """ Function to keep track of the detected stars maintaining its data. """
 
     for old_star in detected_stars.copy().items():

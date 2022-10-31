@@ -13,9 +13,9 @@ import random
 import cv2 as cv
 
 from src.image_processor.image_processor import (DEFAULT_LEFT_LIFETIME,
-                                                 find_stars,
+                                                 detect_stars,
                                                  prune_close_points,
-                                                 star_tracker,
+                                                 track_stars,
                                                  detect_blinking_star)
 
 random.seed(1)
@@ -23,6 +23,11 @@ random.seed(1)
 
 class DataGettersTestCase(unittest.TestCase):
     """ Class to test the image_processor script. """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.star_detector = cv.FastFeatureDetector_create(threshold=50)
+
     def test_find_stars_1(self):
         """ find_stars can detect one star. """
 
@@ -31,7 +36,7 @@ class DataGettersTestCase(unittest.TestCase):
             sys.exit("Could not read the image.")
         expected_result = [(17, 17)]
 
-        result = find_stars(image)
+        result = detect_stars(image, self.star_detector)
         self.assertEqual(result, expected_result)
 
     def test_find_stars_2(self):
@@ -50,7 +55,7 @@ class DataGettersTestCase(unittest.TestCase):
             (16, 223),
         ]
 
-        result = find_stars(image)
+        result = detect_stars(image, self.star_detector)
         self.assertEqual(result, expected_result)
 
     def test_prune_close_points_1(self):
@@ -91,11 +96,11 @@ class DataGettersTestCase(unittest.TestCase):
             }
         }, 1)
 
-        result = star_tracker(star_positions,
-                              detected_stars,
-                              desired_blinking_freq,
-                              fps,
-                              next_star_id=0)
+        result = track_stars(star_positions,
+                             detected_stars,
+                             desired_blinking_freq,
+                             fps,
+                             next_star_id=0)
         self.assertEqual(result, expected_result)
 
     def test_star_tracker_2(self):
@@ -129,11 +134,11 @@ class DataGettersTestCase(unittest.TestCase):
             }
         }, 1)
 
-        result = star_tracker(star_positions,
-                              detected_stars,
-                              desired_blinking_freq,
-                              fps,
-                              next_star_id=1)
+        result = track_stars(star_positions,
+                             detected_stars,
+                             desired_blinking_freq,
+                             fps,
+                             next_star_id=1)
         self.assertEqual(result, expected_result)
 
     def test_star_tracker_3(self):
@@ -167,11 +172,11 @@ class DataGettersTestCase(unittest.TestCase):
             }
         }, 1)
 
-        result = star_tracker(star_positions,
-                              detected_stars,
-                              desired_blinking_freq,
-                              fps,
-                              next_star_id=1)
+        result = track_stars(star_positions,
+                             detected_stars,
+                             desired_blinking_freq,
+                             fps,
+                             next_star_id=1)
         self.assertEqual(result, expected_result)
 
     def test_star_tracker_4(self):
@@ -189,11 +194,11 @@ class DataGettersTestCase(unittest.TestCase):
         }
         expected_result = ({}, 1)
 
-        result = star_tracker(star_positions,
-                              detected_stars,
-                              desired_blinking_freq,
-                              fps,
-                              next_star_id=1)
+        result = track_stars(star_positions,
+                             detected_stars,
+                             desired_blinking_freq,
+                             fps,
+                             next_star_id=1)
         self.assertEqual(result, expected_result)
 
     def test_detect_blinking_star(self):

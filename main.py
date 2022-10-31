@@ -39,7 +39,7 @@ import cv2 as cv
 import numpy as np
 
 from src.catalog.star_catalog import StarCatalog
-from src.image_processor.image_processor import (find_stars, star_tracker,
+from src.image_processor.image_processor import (detect_stars, track_stars,
                                                  detect_blinking_star,
                                                  detect_shooting_stars)
 from src.image_processor.star_descriptor import StarDescriptor
@@ -75,8 +75,8 @@ pairs = []
 
 # * Decorators
 if CHECKING_FRAME_VELOCITY:
-    find_stars = time_it(find_stars)
-    star_tracker = time_it(star_tracker)
+    detect_stars = time_it(detect_stars)
+    star_tracker = time_it(track_stars)
     detect_shooting_stars = time_it(detect_shooting_stars)
     detect_blinking_star = time_it(detect_blinking_star)
 
@@ -104,7 +104,7 @@ def process_image(image,
     else:
         gray = image
 
-    stars = find_stars(gray, threshold, fast, distance)
+    stars = detect_stars(gray, threshold, fast, distance)
 
     if not CHECKING_VIDEO_VELOCITY:
         image = draw_found_stars(image, stars)
@@ -204,6 +204,8 @@ def satellite_detection_test(desired_blinking_freq=SAT_DESIRED_BLINKING_FREQ):
     # if VIDEO_FROM_CAMERA this could not work
     video_fps = vid_cap.get(cv.CAP_PROP_FPS)
 
+    star_detector = cv.FastFeatureDetector_create(threshold=THRESHOLD)
+
     tracked_stars = {}
     satellite_log = []
     next_star_id = 0
@@ -235,12 +237,12 @@ def satellite_detection_test(desired_blinking_freq=SAT_DESIRED_BLINKING_FREQ):
         else:
             gray = frame
 
-        new_star_positions = find_stars(gray, THRESHOLD, FAST, DISTANCE)
+        new_star_positions = detect_stars(gray, star_detector, FAST, DISTANCE)
 
-        tracked_stars, next_star_id = star_tracker(new_star_positions,
-                                                   tracked_stars,
-                                                   desired_blinking_freq,
-                                                   video_fps, next_star_id)
+        tracked_stars, next_star_id = track_stars(new_star_positions,
+                                                  tracked_stars,
+                                                  desired_blinking_freq,
+                                                  video_fps, next_star_id)
 
         shooting_stars = detect_shooting_stars(tracked_stars,
                                                MOVEMENT_THRESHOLD)
@@ -464,7 +466,7 @@ def identify_test():
     else:
         gray = image
 
-    stars = find_stars(gray, THRESHOLD, fast=False)
+    stars = detect_stars(gray, THRESHOLD, fast=False)
 
     # Chose a subset
     stars = [(x, y) for x, y in stars
