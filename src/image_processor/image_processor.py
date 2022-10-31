@@ -78,11 +78,16 @@ def track_stars(star_positions: list[tuple[int, int]],
                 detected_stars: dict[int, dict],
                 desired_blinking_freq: float = SAT_DESIRED_BLINKING_FREQ,
                 video_fps: float = VIDEO_FPS,
-                next_star_id: int = 0) -> tuple[dict[int, dict], int]:
-    """ Function to keep track of the detected stars maintaining its data. """
+                next_star_id: int = 0) -> int:
+    """ Function to keep track of the detected stars maintaining its data.
+
+    Note: This function modifies data from 'star_positions' and
+    'detected_stars' parameters without an explicit return statement for memory
+    usage reduction purposes.
+    """
 
     for old_star in detected_stars.copy().items():
-        star_positions, detected_stars = update_star_info(
+        update_star_info(
             old_star,
             star_positions,
             detected_stars,
@@ -90,20 +95,25 @@ def track_stars(star_positions: list[tuple[int, int]],
             video_fps,
         )
 
-    detected_stars, stop_range_id = add_remaining_stars(
+    stop_range_id = add_remaining_stars(
         star_positions,
         detected_stars,
         video_fps,
         next_star_id,
     )
 
-    return detected_stars, stop_range_id
+    return stop_range_id
 
 
 def add_remaining_stars(star_positions: list[tuple[int, int]],
-                        detected_stars: dict[int, dict], video_fps: float,
-                        next_star_id: int) -> tuple[dict[int, dict], int]:
-    """ Function to add the remaining stars as new ones into de stars dict. """
+                        detected_stars: dict[int, dict],
+                        video_fps: float,
+                        next_star_id: int) -> int:
+    """ Function to add the remaining stars as new ones into de stars dict.
+
+    Note: This function modifies data from 'detected_stars' parameter without
+    an explicit return statement for memory usage reduction purposes.
+    """
 
     stop_range_id = next_star_id + len(star_positions)
     star_ids = range(next_star_id, stop_range_id)
@@ -122,17 +132,20 @@ def add_remaining_stars(star_positions: list[tuple[int, int]],
             }
         })
 
-    return detected_stars, stop_range_id
+    return stop_range_id
 
 
-def update_star_info(
-    old_star: tuple[int, dict],
-    star_positions: list[tuple[int, int]],
-    detected_stars: dict[int, dict],
-    desired_blinking_freq: float,
-    video_fps: float,
-) -> tuple[list[tuple[int, int]], dict[int, dict]]:
-    """ Function to update a star's information. """
+def update_star_info(old_star: tuple[int, dict],
+                     star_positions: list[tuple[int, int]],
+                     detected_stars: dict[int, dict],
+                     desired_blinking_freq: float,
+                     video_fps: float) -> None:
+    """ Function to update a star's information.
+
+    Note: This function modifies data from 'star_positions' and
+    'detected_stars' parameters without an explicit return statement for memory
+    usage reduction purposes.
+    """
 
     old_star_id, old_star_info = old_star
 
@@ -141,7 +154,7 @@ def update_star_info(
     if new_star_pos is None:
         if old_star_info["left_lifetime"] == 0:
             detected_stars.pop(old_star_id)
-            return star_positions, detected_stars
+            return
 
         old_star_info["last_times_detected"].append(0)
         left_lifetime = old_star_info["left_lifetime"] - 1
@@ -177,8 +190,6 @@ def update_star_info(
         "detection_confidence": detection_confidence,
         "movement_vector": movement_vector,
     })
-
-    return star_positions, detected_stars
 
 
 def get_new_star_position(star_positions: list[tuple[int, int]],
