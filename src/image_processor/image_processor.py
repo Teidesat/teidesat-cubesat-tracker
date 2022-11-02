@@ -40,25 +40,16 @@ random.seed(time())
 new_star_id = 0
 
 
-def prune_close_points(indices: list[tuple[int, int]],
+def prune_close_points(points: list[tuple[int, int]],
                        min_distance: float) -> list[tuple[int, int]]:
-    """ Function to prune close points because of their probabilities of being
-    a duplicate reference to the same element of an image. """
+    """ Prune close points since they have a high probability of being an image
+    artifact of the same star """
 
-    pruned = []
-
-    for i, point_1 in enumerate(indices):
-        duplicate = False
-
-        for point_2 in indices[i + 1:]:
-            if dist(point_1, point_2) < min_distance:
-                duplicate = True
-                break
-
-        if not duplicate:
-            pruned.append(point_1)
-
-    return pruned
+    return [
+        point_1 for i, point_1 in enumerate(points) if
+        all(dist(point_1, point_2) > min_distance
+            for point_2 in points[i + 1:])
+    ]
 
 
 def detect_stars(image,
@@ -70,10 +61,7 @@ def detect_stars(image,
     keypoints = star_detector.detect(image, None)
     points = [keypoint.pt for keypoint in keypoints]
 
-    if not fast:
-        points = prune_close_points(points, distance)
-
-    return points
+    return points if fast else prune_close_points(points, distance)
 
 
 def track_stars(star_positions: list[tuple[int, int]],
