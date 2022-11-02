@@ -208,7 +208,6 @@ def satellite_detection_test(desired_blinking_freq=SAT_DESIRED_BLINKING_FREQ):
 
     tracked_stars = {}
     satellite_log = []
-    next_star_id = 0
 
     wait_time = 1
     wait_options = {
@@ -239,11 +238,10 @@ def satellite_detection_test(desired_blinking_freq=SAT_DESIRED_BLINKING_FREQ):
 
         new_star_positions = detect_stars(gray, star_detector, FAST, DISTANCE)
 
-        next_star_id = track_stars(new_star_positions,
-                                   tracked_stars,
-                                   desired_blinking_freq,
-                                   video_fps,
-                                   next_star_id)
+        track_stars(new_star_positions,
+                    tracked_stars,
+                    desired_blinking_freq,
+                    video_fps)
 
         shooting_stars = detect_shooting_stars(tracked_stars,
                                                MOVEMENT_THRESHOLD)

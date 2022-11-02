@@ -83,7 +83,7 @@ class DataGettersTestCase(unittest.TestCase):
         desired_blinking_freq = 30
         star_positions = [(10, 15)]
         detected_stars = {}
-        expected_result = ({
+        expected_result = {
             0: {
                 "last_positions": [(10, 15)],
                 "last_times_detected": [1],
@@ -94,14 +94,13 @@ class DataGettersTestCase(unittest.TestCase):
                 "movement_vector": (0, 0),
                 "color": [255, 205.57729349197388, 0.0],
             }
-        }, 1)
+        }
 
-        result = track_stars(star_positions,
-                             detected_stars,
-                             desired_blinking_freq,
-                             fps,
-                             next_star_id=0)
-        self.assertEqual(result, expected_result)
+        track_stars(star_positions,
+                    detected_stars,
+                    desired_blinking_freq,
+                    fps)
+        self.assertEqual(detected_stars, expected_result)
 
     def test_star_tracker_2(self):
         """ star_tracker can keep track of a moving star. """
@@ -121,7 +120,7 @@ class DataGettersTestCase(unittest.TestCase):
                 "color": [],
             }
         }
-        expected_result = ({
+        expected_result = {
             0: {
                 "last_positions": [(10, 15), (11, 16)],
                 "last_times_detected": [1, 0, 0, 1],
@@ -132,14 +131,13 @@ class DataGettersTestCase(unittest.TestCase):
                 "movement_vector": (0, 0),
                 "color": [],
             }
-        }, 1)
+        }
 
-        result = track_stars(star_positions,
-                             detected_stars,
-                             desired_blinking_freq,
-                             fps,
-                             next_star_id=1)
-        self.assertEqual(result, expected_result)
+        track_stars(star_positions,
+                    detected_stars,
+                    desired_blinking_freq,
+                    fps)
+        self.assertEqual(detected_stars, expected_result)
 
     def test_star_tracker_3(self):
         """ star_tracker can remember a hidden star. """
@@ -159,7 +157,7 @@ class DataGettersTestCase(unittest.TestCase):
                 "color": [],
             }
         }
-        expected_result = ({
+        expected_result = {
             0: {
                 "last_positions": [(11, 16)],
                 "last_times_detected": [1, 1, 0],
@@ -170,14 +168,13 @@ class DataGettersTestCase(unittest.TestCase):
                 "movement_vector": (0, 0),
                 "color": [],
             }
-        }, 1)
+        }
 
-        result = track_stars(star_positions,
-                             detected_stars,
-                             desired_blinking_freq,
-                             fps,
-                             next_star_id=1)
-        self.assertEqual(result, expected_result)
+        track_stars(star_positions,
+                    detected_stars,
+                    desired_blinking_freq,
+                    fps)
+        self.assertEqual(detected_stars, expected_result)
 
     def test_star_tracker_4(self):
         """ star_tracker can forget a star not found for a long time. """
@@ -192,14 +189,13 @@ class DataGettersTestCase(unittest.TestCase):
                 "movement_vector": (0, 0),
             }
         }
-        expected_result = ({}, 1)
+        expected_result = {}
 
-        result = track_stars(star_positions,
-                             detected_stars,
-                             desired_blinking_freq,
-                             fps,
-                             next_star_id=1)
-        self.assertEqual(result, expected_result)
+        track_stars(star_positions,
+                    detected_stars,
+                    desired_blinking_freq,
+                    fps)
+        self.assertEqual(detected_stars, expected_result)
 
     def test_detect_blinking_star(self):
         """ detect_blinking_star can detect the star that blinks at the desired
