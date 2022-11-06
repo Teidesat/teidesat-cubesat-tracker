@@ -231,10 +231,7 @@ def satellite_detection_test(desired_blinking_freq=SAT_DESIRED_BLINKING_FREQ):
         if not success:
             break
 
-        if COLOR_CAMERA:
-            gray = cv.cvtColor(frame, cv.COLOR_RGB2GRAY)
-        else:
-            gray = frame
+        gray = cv.cvtColor(frame, cv.COLOR_RGB2GRAY) if COLOR_CAMERA else frame
 
         new_star_positions = detect_stars(gray, star_detector, FAST, DISTANCE)
 
