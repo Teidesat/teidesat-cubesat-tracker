@@ -212,8 +212,7 @@ def get_movement_vector(last_positions: list[tuple[int, int]]):
         for point_1, point_2 in zip(last_positions, last_positions[1:])
     ]
 
-    m_v_len = len(movement_vectors)
-    mean_vector = [sum(values) / m_v_len for values in zip(*movement_vectors)]
+    mean_vector = get_mean_vect(movement_vectors)
 
     if not REMOVE_OUTLIERS:
         return mean_vector
@@ -223,9 +222,16 @@ def get_movement_vector(last_positions: list[tuple[int, int]]):
         if dist(mean_vector, current_vector) < MAX_OUTLIER_THRESHOLD
     ]
 
-    f_v_len = len(filtered_vectors)
-    if f_v_len != 0:
-        return [sum(values) / f_v_len for values in zip(*filtered_vectors)]
+    return get_mean_vect(filtered_vectors)
+
+
+def get_mean_vect(points):
+
+    num_of_points = len(points)
+
+    if num_of_points != 0:
+        return [sum(point_axis) / num_of_points
+                for point_axis in zip(*points)]
 
     return DEFAULT_MOVEMENT_VECTOR
 
