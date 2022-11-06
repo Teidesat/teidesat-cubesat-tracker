@@ -245,7 +245,8 @@ def detect_shooting_stars(
     return {
         star_id: star_info
         for star_id, star_info in detected_stars.items()
-        if np.linalg.norm(star_info["movement_vector"]) >= movement_threshold
+        if (abs(star_info["movement_vector"][0]) +
+            abs(star_info["movement_vector"][1])) >= movement_threshold
     }
 
 
