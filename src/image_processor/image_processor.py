@@ -139,39 +139,34 @@ def update_star_info(old_star: tuple[int, dict],
             return
 
         old_star_info["last_times_detected"].append(0)
-        left_lifetime = old_star_info["left_lifetime"] - 1
+        old_star_info["left_lifetime"] -= 1
 
     else:
         star_positions.remove(new_star_pos)
         old_star_info["last_positions"].append(new_star_pos)
-
         old_star_info["last_times_detected"].append(1)
-        left_lifetime = DEFAULT_LEFT_LIFETIME
+        old_star_info["left_lifetime"] = DEFAULT_LEFT_LIFETIME
 
-    last_positions = old_star_info["last_positions"][-MAX_HISTORY_LEN:]
-    last_times_detected = old_star_info["last_times_detected"][
-        -MAX_HISTORY_LEN:]
-    movement_vector = get_movement_vector(last_positions)
+    old_star_info["last_positions"] = \
+        old_star_info["last_positions"][-MAX_HISTORY_LEN:]
 
-    lifetime = old_star_info["lifetime"] + 1
-    blinking_freq = video_fps * (sum(last_times_detected) /
-                                 len(last_times_detected))
+    old_star_info["last_times_detected"] = \
+        old_star_info["last_times_detected"][-MAX_HISTORY_LEN:]
 
-    detection_confidence = old_star_info["detection_confidence"]
-    if abs(blinking_freq - desired_blinking_freq) < FREQUENCY_THRESHOLD:
-        detection_confidence += 1
-    else:
-        detection_confidence -= 2
+    old_star_info["lifetime"] += 1
 
-    detected_stars[old_star_id].update({
-        "last_positions": last_positions,
-        "last_times_detected": last_times_detected,
-        "lifetime": lifetime,
-        "left_lifetime": left_lifetime,
-        "blinking_freq": blinking_freq,
-        "detection_confidence": detection_confidence,
-        "movement_vector": movement_vector,
-    })
+    old_star_info["movement_vector"] = get_movement_vector(
+        old_star_info["last_positions"]
+    )
+
+    old_star_info["blinking_freq"] = video_fps * (
+        sum(old_star_info["last_times_detected"]) /
+        len(old_star_info["last_times_detected"])
+    )
+
+    old_star_info["detection_confidence"] += 1 if \
+        abs(old_star_info["blinking_freq"] -
+            desired_blinking_freq) < FREQUENCY_THRESHOLD else -2
 
 
 def get_new_star_position(star_positions: list[tuple[int, int]],
