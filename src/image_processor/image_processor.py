@@ -242,11 +242,11 @@ def detect_shooting_stars(
     """ Function to detect which of the found stars are shooting stars or
     satellites. """
 
-    return dict(
-        filter(
-            lambda star:
-            (np.linalg.norm(star[1]["movement_vector"]) >= movement_threshold),
-            detected_stars.items()))
+    return {
+        star_id: star_info
+        for star_id, star_info in detected_stars.items()
+        if np.linalg.norm(star_info["movement_vector"]) >= movement_threshold
+    }
 
 
 def detect_blinking_star(
@@ -260,7 +260,11 @@ def detect_blinking_star(
         default=None,
     )
 
-    if ((blinking_star is not None) and
-        (blinking_star[1]["detection_confidence"] > MIN_DETECTION_CONFIDENCE)):
+    assert blinking_star is None or isinstance(blinking_star, tuple)
+
+    if (blinking_star is not None and
+            (blinking_star[1]["detection_confidence"] >
+             MIN_DETECTION_CONFIDENCE)):
         return blinking_star
+
     return None
