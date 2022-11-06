@@ -6,7 +6,7 @@ detection and tracking algorithms.
 """
 
 from colorsys import hsv_to_rgb
-from math import inf, dist
+from math import dist
 import random
 from time import time
 from typing import Optional
@@ -189,13 +189,12 @@ def get_new_star_position(star_positions: list[tuple[int, int]],
 
     except ValueError:
         new_star_pos = None
-        best_candidate_dist = inf
+        best_candidate_dist = MAX_MOVE_DISTANCE
 
         for current_star_pos in star_positions:
             current_pair_dist = dist(expected_star_pos, current_star_pos)
 
-            if (current_pair_dist < MAX_MOVE_DISTANCE
-                    and best_candidate_dist > current_pair_dist):
+            if current_pair_dist < best_candidate_dist:
                 best_candidate_dist = current_pair_dist
                 new_star_pos = current_star_pos
 
