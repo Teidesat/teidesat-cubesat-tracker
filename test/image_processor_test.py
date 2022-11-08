@@ -64,7 +64,7 @@ class DataGettersTestCase(unittest.TestCase):
         star_positions = [(8, 8), (10, 10)]
         expected_result = [(10, 10)]
 
-        result = prune_close_points(star_positions, min_distance=5)
+        result = prune_close_points(star_positions, min_prune_distance=5)
         self.assertEqual(result, expected_result)
 
     def test_prune_close_points_2(self):
@@ -73,7 +73,7 @@ class DataGettersTestCase(unittest.TestCase):
         star_positions = [(8, 8), (10, 10), (15, 15)]
         expected_result = [(10, 10), (15, 15)]
 
-        result = prune_close_points(star_positions, min_distance=5)
+        result = prune_close_points(star_positions, min_prune_distance=5)
         self.assertEqual(result, expected_result)
 
     def test_star_tracker_1(self):
