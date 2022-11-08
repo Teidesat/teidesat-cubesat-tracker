@@ -188,10 +188,10 @@ def get_new_star_position(
 ) -> Optional[tuple[int, int]]:
     """ Function to get the new position of a given star. """
 
-    expected_star_pos = (old_star_info["last_positions"][-1][0] +
-                         old_star_info["movement_vector"][0],
-                         old_star_info["last_positions"][-1][1] +
-                         old_star_info["movement_vector"][1])
+    expected_star_pos = (round(old_star_info["last_positions"][-1][0] +
+                               old_star_info["movement_vector"][0]),
+                         round(old_star_info["last_positions"][-1][1] +
+                               old_star_info["movement_vector"][1]))
 
     try:
         star_positions.index(expected_star_pos)
