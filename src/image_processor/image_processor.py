@@ -251,8 +251,10 @@ def get_mean_vect(
     num_of_points = len(points)
 
     if num_of_points != 0:
-        return [sum(point_axis) / num_of_points
-                for point_axis in zip(*points)]
+        zipped_points = list(zip(*points))
+
+        return (sum(zipped_points[0]) / num_of_points,
+                sum(zipped_points[1]) / num_of_points)
 
     return default_vector
 
