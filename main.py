@@ -438,6 +438,7 @@ def create_export_video_file(vid_cap):
 
 def export_satellite_log(satellite_log: list[tuple[int, dict]]):
     """ Function to export the satellite log into a file. """
+
     with open(str(PATH_SAT_LOG), "w", encoding="utf-8-sig") as file:
         print("id;",
               "last_times_detected;",
@@ -449,15 +450,15 @@ def export_satellite_log(satellite_log: list[tuple[int, dict]]):
               "last_positions;",
               file=file)
 
-        for star in satellite_log:
-            print(f"{star[0]};",
-                  f"{star[1]['last_times_detected']};",
-                  f"{star[1]['lifetime']};",
-                  f"{star[1]['left_lifetime']};",
-                  f"{star[1]['detection_confidence']};",
-                  f"{star[1]['blinking_freq']};",
-                  f"{star[1]['movement_vector']};",
-                  f"{star[1]['last_positions']};",
+        for star_id, star_info in satellite_log:
+            print(f"{star_id};",
+                  f"{star_info['last_times_detected']};",
+                  f"{star_info['lifetime']};",
+                  f"{star_info['left_lifetime']};",
+                  f"{star_info['detection_confidence']};",
+                  f"{star_info['blinking_freq']};",
+                  f"{star_info['movement_vector']};",
+                  f"{star_info['last_positions']};",
                   file=file)
 
 
