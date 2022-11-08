@@ -65,6 +65,7 @@ CHECKING_FRAME_VELOCITY = False
 COLOR_CAMERA = True
 VIDEO_FROM_CAMERA = False
 
+COLORIZED_TRACKED_STARS = False
 OUTPUT_VIDEO_TO_FILE = True
 PATH_OUTPUT_VIDEO = Path("./data/videos/video_output_" +
                          datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".mp4")
@@ -346,21 +347,27 @@ def draw_tracked_stars(
         radius: int = PX_SENSITIVITY,
         color: tuple = None,
         thickness: int = 2,
+        colorized_tracked_stars: bool = COLORIZED_TRACKED_STARS,
 ):
     """ Function to draw in the given frame a circle around every tracked
     star. """
 
     for star in tracked_stars.values():
+
         if color is None:
-            color = (0, 0, 100)
-            # color = star["color"]
+            if colorized_tracked_stars:
+                draw_color = star["color"]
+            else:
+                draw_color = (0, 0, 100)
+        else:
+            draw_color = color
 
         cv.circle(
             show_frame,
             center=(int(star["last_positions"][-1][0]),
                     int(star["last_positions"][-1][1])),
             radius=radius,
-            color=color,
+            color=draw_color,
             thickness=thickness,
         )
 
