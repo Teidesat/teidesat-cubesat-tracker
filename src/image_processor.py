@@ -78,9 +78,9 @@ def track_stars(
     usage reduction purposes.
     """
 
-    for old_star in detected_stars.copy().items():
+    for old_star_id in list(detected_stars.keys()):
         update_star_info(
-            old_star,
+            old_star_id,
             star_positions,
             detected_stars,
             sat_desired_blinking_freq,
@@ -125,7 +125,7 @@ def add_remaining_stars(
 
 
 def update_star_info(
-        old_star: tuple[int, dict],
+        old_star_id: int,
         star_positions: list[tuple[int, int]],
         detected_stars: dict[int, dict],
         sat_desired_blinking_freq: float = SAT_DESIRED_BLINKING_FREQ,
@@ -141,7 +141,7 @@ def update_star_info(
     usage reduction purposes.
     """
 
-    old_star_id, old_star_info = old_star
+    old_star_info = detected_stars[old_star_id]
 
     new_star_pos = get_new_star_position(star_positions, old_star_info)
 
