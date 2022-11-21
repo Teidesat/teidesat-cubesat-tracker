@@ -26,7 +26,7 @@ __deprecated__ = False
 # __license__ = "GPLv3"
 __maintainer__ = "Sergio Tabares Hernández"
 __status__ = "Production"
-__version__ = "0.0.5"
+__version__ = "0.0.6"
 
 from copy import deepcopy
 from datetime import datetime
@@ -56,12 +56,10 @@ PATH_FRAME = Path("./data/images/original.jpg")
 PATH_VIDEO = Path("./data/videos/video4.mp4")
 PATH_SAT_LOG = Path("./data/logs/satellite_log.csv")
 
-CHECKING_VIDEO_VELOCITY = False
-CHECKING_FRAME_VELOCITY = False
-
-COLOR_CAMERA = True
+RGB_IMAGE = True
 VIDEO_FROM_CAMERA = False
 
+SHOW_VIDEO_RESULT = True
 COLORIZED_TRACKED_STARS = False
 OUTPUT_VIDEO_TO_FILE = True
 PATH_OUTPUT_VIDEO = Path("./data/videos/video_output_" +
@@ -71,124 +69,7 @@ PATH_OUTPUT_VIDEO = Path("./data/videos/video_output_" +
 def main():
     """ Main function to start the program execution. """
 
-    # single_frame_test()
-
-    # video_test()
-
-    satellite_detection_test()
-
-
-def process_image(
-        image,
-        color_camera: bool = COLOR_CAMERA,
-        star_detector_threshold: int = STAR_DETECTOR_THRESHOLD,
-        fast: bool = FAST,
-        min_prune_distance: float = MIN_PRUNE_DISTANCE,
-        checking_video_velocity: bool = CHECKING_VIDEO_VELOCITY,
-):
-    """ Function to process the given image and mark the detected stars. """
-
-    gray = cv.cvtColor(image, cv.COLOR_RGB2GRAY) if color_camera else image
-
-    star_detector = cv.FastFeatureDetector_create(
-        threshold=star_detector_threshold)
-
-    stars = detect_stars(gray, star_detector, fast, min_prune_distance)
-
-    if not checking_video_velocity:
-        image = draw_found_stars(image, stars)
-
-    return image
-
-
-def single_frame_test(str_path_frame=str(PATH_FRAME)):
-    """ Function to test the implemented processing image methods with a single
-    video frame or image. """
-
-    print("Processing frame from:", str_path_frame)
-    image = cv.imread(str_path_frame)
-    if image is None:
-        sys.exit("\nCould not read the image.")
-
-    image = process_image(image)
-    print("\n")
-
-    cv.imshow(str_path_frame, image)
-    cv.waitKey(0)
-    cv.destroyAllWindows()
-
-
-def video_test(str_path_video=str(PATH_VIDEO)):
-    """ Function to test the implemented processing image methods with a whole
-    video. """
-
-    print("Processing video from:", str_path_video)
-    vid_cap = cv.VideoCapture(str_path_video)
-    if not vid_cap.isOpened():
-        sys.exit("\nError: Unable to open video.")
-
-    wait_time = 1
-    wait_options = {
-        ord('z'): 1,
-        ord('x'): 100,
-        ord('c'): 1000,
-        ord('v'): 0,
-    }
-
-    if CHECKING_VIDEO_VELOCITY:
-        processed_frames = 0
-        start_time = perf_counter()
-    else:
-        cv.namedWindow(str_path_video, cv.WINDOW_NORMAL)
-
-        if OUTPUT_VIDEO_TO_FILE:
-            output_video = create_export_video_file(vid_cap)
-
-    while True:
-        success, frame = vid_cap.read()
-        if not success:
-            break
-
-        show_frame = process_image(frame)
-
-        if CHECKING_VIDEO_VELOCITY:
-            processed_frames += 1
-        else:
-            cv.imshow(str_path_video, show_frame)
-
-            if OUTPUT_VIDEO_TO_FILE:
-                output_video.write(show_frame)
-
-            key = cv.waitKey(wait_time)
-
-            if key == ord('q'):
-                break
-
-            wait_time = wait_options.get(key, wait_time)
-
-    if CHECKING_VIDEO_VELOCITY:
-        print_time_statistics(processed_frames, start_time)
-
-    elif OUTPUT_VIDEO_TO_FILE:
-        print(f"Video saved on '{str(PATH_OUTPUT_VIDEO)}'")
-
-    cv.destroyAllWindows()
-
-
-def satellite_detection_test(
-        sat_desired_blinking_freq: float = SAT_DESIRED_BLINKING_FREQ,
-        star_detector_threshold: int = STAR_DETECTOR_THRESHOLD,
-        fast: bool = FAST,
-        min_prune_distance: float = MIN_PRUNE_DISTANCE,
-        movement_threshold: float = MOVEMENT_THRESHOLD,
-        video_from_camera: bool = VIDEO_FROM_CAMERA,
-        color_camera: bool = COLOR_CAMERA,
-        checking_video_velocity: bool = CHECKING_VIDEO_VELOCITY,
-        output_video_to_file: bool = OUTPUT_VIDEO_TO_FILE,
-):
-    """ Function to test the detection of the blinking star. """
-
-    if video_from_camera:
+    if VIDEO_FROM_CAMERA:
         video_path = 0  # Default webcam id
         print("Processing video from camera number ", video_path)
 
@@ -199,6 +80,22 @@ def satellite_detection_test(
     vid_cap = cv.VideoCapture(video_path)
     if not vid_cap.isOpened():
         sys.exit("\nError: Unable to open video.")
+
+    satellite_detection_test(vid_cap)
+
+
+def satellite_detection_test(
+        vid_cap,
+        sat_desired_blinking_freq: float = SAT_DESIRED_BLINKING_FREQ,
+        star_detector_threshold: int = STAR_DETECTOR_THRESHOLD,
+        fast: bool = FAST,
+        min_prune_distance: float = MIN_PRUNE_DISTANCE,
+        movement_threshold: float = MOVEMENT_THRESHOLD,
+        rgb_image: bool = RGB_IMAGE,
+        show_video_result: bool = SHOW_VIDEO_RESULT,
+        output_video_to_file: bool = OUTPUT_VIDEO_TO_FILE,
+):
+    """ Function to detect and track the satellite. """
 
     # if VIDEO_FROM_CAMERA this could not work
     video_fps = vid_cap.get(cv.CAP_PROP_FPS)
@@ -217,21 +114,23 @@ def satellite_detection_test(
         ord('v'): 0,
     }
 
-    if checking_video_velocity:
-        processed_frames = 0
-        start_time = perf_counter()
-    else:
-        cv.namedWindow("Satellite detection", cv.WINDOW_NORMAL)
+    processed_frames = 0
+    start_time = perf_counter()
 
-        if output_video_to_file:
-            output_video = create_export_video_file(vid_cap)
+    output_video = (create_export_video_file(vid_cap)
+                    if output_video_to_file else None)
+
+    if show_video_result:
+        cv.namedWindow("Satellite detection", cv.WINDOW_NORMAL)
 
     while True:
         success, frame = vid_cap.read()
         if not success:
             break
 
-        gray = cv.cvtColor(frame, cv.COLOR_RGB2GRAY) if color_camera else frame
+        processed_frames += 1
+
+        gray = cv.cvtColor(frame, cv.COLOR_RGB2GRAY) if rgb_image else frame
 
         new_star_positions = detect_stars(gray,
                                           star_detector,
@@ -248,24 +147,22 @@ def satellite_detection_test(
 
         satellite = detect_blinking_star(shooting_stars)
 
-        if checking_video_velocity:
-            processed_frames += 1
+        show_frame = (frame.copy() if rgb_image
+                      else cv.cvtColor(frame, cv.COLOR_GRAY2RGB))
 
-        else:
-            show_frame = frame.copy()
+        # show_frame = draw_found_stars(show_frame, new_star_positions)
+        show_frame = draw_tracked_stars(show_frame, tracked_stars)
+        show_frame = draw_shooting_stars(show_frame, shooting_stars)
 
-            # show_frame = draw_found_stars(show_frame, new_star_positions)
-            show_frame = draw_tracked_stars(show_frame, tracked_stars)
-            show_frame = draw_shooting_stars(show_frame, shooting_stars)
+        if satellite is not None:
+            satellite_log.append(deepcopy(satellite))
+            show_frame = draw_satellite(show_frame, satellite)
 
-            if satellite is not None:
-                satellite_log.append(deepcopy(satellite))
-                show_frame = draw_satellite(show_frame, satellite)
+        if output_video_to_file:
+            output_video.write(show_frame)
 
+        if show_video_result:
             cv.imshow("Satellite detection", show_frame)
-
-            if output_video_to_file:
-                output_video.write(show_frame)
 
             key = cv.waitKey(wait_time)
 
@@ -274,13 +171,11 @@ def satellite_detection_test(
 
             wait_time = wait_options.get(key, wait_time)
 
-    if checking_video_velocity:
-        print_time_statistics(processed_frames, start_time)
-    else:
-        export_satellite_log(satellite_log)
+    print_time_statistics(processed_frames, start_time)
+    export_satellite_log(satellite_log)
 
-        if output_video_to_file:
-            print(f"Video saved on '{str(PATH_OUTPUT_VIDEO)}'")
+    if output_video_to_file:
+        print(f"Video saved on '{str(PATH_OUTPUT_VIDEO)}'")
 
     cv.destroyAllWindows()
 
@@ -292,10 +187,6 @@ def print_time_statistics(
     """ Function to print processing time statistics. """
 
     processing_time = perf_counter() - start_time
-
-    if CHECKING_FRAME_VELOCITY:
-        print("\n  *Video process time could not be real",
-              "if also checking frame process time.*")
 
     print("  Processed frames:", processed_frames)
     print("  Time needed:", processing_time)
