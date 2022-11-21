@@ -2,18 +2,18 @@
 # -*- coding: utf-8 -*-
 """
 This program tests the correct functionality of the functions at
- src/image_processor/image_processor.py file.
+ src/image_processor.py file.
 """
 
 from pathlib import Path
+import random
 import sys
 import unittest
 from unittest.mock import Mock, patch
-import random
 
 import cv2 as cv
 
-from src.image_processor.image_processor import (
+from src.image_processor import (
     DEFAULT_LEFT_LIFETIME,
     detect_stars,
     prune_close_points,
@@ -237,7 +237,7 @@ class DataGettersTestCase(unittest.TestCase):
         add_remaining_stars(star_positions, detected_stars)
         self.assertEqual(expected_result, detected_stars)
 
-    @patch('src.image_processor.image_processor.new_star_id', 0)
+    @patch('src.image_processor.new_star_id', 0)
     def test_add_remaining_stars_1(self):
         """ add_remaining_stars can add one star to the detected stars'
         dictionary. """
@@ -270,7 +270,7 @@ class DataGettersTestCase(unittest.TestCase):
 
         self.assertEqual(expected_result, detected_stars)
 
-    @patch('src.image_processor.image_processor.new_star_id', 0)
+    @patch('src.image_processor.new_star_id', 0)
     def test_add_remaining_stars_2(self):
         """ add_remaining_stars can add multiple stars to the detected stars'
         dictionary. """

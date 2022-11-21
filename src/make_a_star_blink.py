@@ -1,13 +1,13 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Simple script to store all the frames of a video as separate images.
+Simple script to process a video and simulate a blinking satellite to test the
+ main program.
 """
 
 from datetime import datetime
-import sys
-
 from pathlib import Path
+import sys
 
 import cv2 as cv
 import numpy as np
@@ -18,7 +18,7 @@ OUTPUT = Path("../data/videos/video_output_" +
 
 PX_SENSITIVITY = 10
 
-click_location = ()
+click_location = (None, None)
 remove_star = False
 
 
@@ -33,11 +33,14 @@ def get_click_location(event, x_coord, y_coord, flags, param):
 
 
 def get_avg_color(frame, radius):
-    """ Function to get the average surrounding color of the selected pixel. """
+    """ Function to get the average surrounding color of the selected
+    location. """
 
     global click_location
 
     x_coord, y_coord = click_location
+    assert isinstance(x_coord, int) and isinstance(y_coord,  int)
+
     roi = frame[(y_coord - radius):(y_coord + radius),
                 (x_coord - radius):(x_coord + radius)]
 

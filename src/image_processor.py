@@ -1,8 +1,8 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-File with the implementation of the image processing functions and star
-detection and tracking algorithms.
+File with the implementation of the image processing functions, star detection
+ and star tracking algorithms.
 """
 
 from colorsys import hsv_to_rgb
@@ -176,9 +176,10 @@ def update_star_info(
         len(old_star_info["last_times_detected"])
     )
 
-    old_star_info["detection_confidence"] += 1 if \
-        abs(old_star_info["blinking_freq"] -
-            sat_desired_blinking_freq) < frequency_threshold else -2
+    old_star_info["detection_confidence"] += 1 if (
+            abs(old_star_info["blinking_freq"] - sat_desired_blinking_freq) <
+            frequency_threshold
+    ) else -2
 
 
 def get_new_star_position(
