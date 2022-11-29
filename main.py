@@ -26,7 +26,7 @@ __deprecated__ = False
 # __license__ = "GPLv3"
 __maintainer__ = "Sergio Tabares Hernández"
 __status__ = "Production"
-__version__ = "0.0.6"
+__version__ = "0.0.7"
 
 from copy import deepcopy
 from datetime import datetime
@@ -42,6 +42,7 @@ from src.image_processor import (
     detect_blinking_star,
     detect_shooting_stars,
 )
+from src.star import Star
 
 # * Constants
 STAR_DETECTOR_THRESHOLD = 50
@@ -218,7 +219,7 @@ def draw_found_stars(
 
 def draw_tracked_stars(
         show_frame,
-        tracked_stars: dict[int, dict],
+        tracked_stars: dict[int, Star],
         radius: int = PX_SENSITIVITY,
         color: tuple = None,
         thickness: int = 2,
@@ -231,7 +232,7 @@ def draw_tracked_stars(
 
         if color is None:
             if colorized_tracked_stars:
-                draw_color = star["color"]
+                draw_color = star.color
             else:
                 draw_color = (0, 0, 100)
         else:
@@ -239,8 +240,8 @@ def draw_tracked_stars(
 
         cv.circle(
             show_frame,
-            center=(int(star["last_positions"][-1][0]),
-                    int(star["last_positions"][-1][1])),
+            center=(int(star.last_positions[-1][0]),
+                    int(star.last_positions[-1][1])),
             radius=radius,
             color=draw_color,
             thickness=thickness,
@@ -251,7 +252,7 @@ def draw_tracked_stars(
 
 def draw_shooting_stars(
         show_frame,
-        shooting_stars: dict[int, dict],
+        shooting_stars: dict[int, Star],
         radius: int = PX_SENSITIVITY,
         color: tuple = (0, 200, 200),
         thickness: int = 2,
@@ -262,8 +263,8 @@ def draw_shooting_stars(
     for star in shooting_stars.values():
         cv.circle(
             show_frame,
-            center=(int(star["last_positions"][-1][0]),
-                    int(star["last_positions"][-1][1])),
+            center=(int(star.last_positions[-1][0]),
+                    int(star.last_positions[-1][1])),
             radius=radius,
             color=color,
             thickness=thickness,
@@ -274,7 +275,7 @@ def draw_shooting_stars(
 
 def draw_satellite(
         show_frame,
-        satellite: tuple[int, dict],
+        satellite: tuple[int, Star],
         radius: int = PX_SENSITIVITY,
         color: tuple = (0, 200, 0),
         thickness: int = 2,
@@ -284,8 +285,8 @@ def draw_satellite(
 
     cv.circle(
         show_frame,
-        center=(int(satellite[1]["last_positions"][-1][0]),
-                int(satellite[1]["last_positions"][-1][1])),
+        center=(int(satellite[1].last_positions[-1][0]),
+                int(satellite[1].last_positions[-1][1])),
         radius=radius,
         color=color,
         thickness=thickness,
@@ -318,7 +319,7 @@ def create_export_video_file(vid_cap):
     return output_video
 
 
-def export_satellite_log(satellite_log: list[tuple[int, dict]]):
+def export_satellite_log(satellite_log: list[tuple[int, Star]]):
     """ Function to export the satellite log into a file. """
 
     with open(str(PATH_SAT_LOG), "w", encoding="utf-8-sig") as file:
@@ -334,13 +335,13 @@ def export_satellite_log(satellite_log: list[tuple[int, dict]]):
 
         for star_id, star_info in satellite_log:
             print(f"{star_id};",
-                  f"{star_info['last_times_detected']};",
-                  f"{star_info['lifetime']};",
-                  f"{star_info['left_lifetime']};",
-                  f"{star_info['detection_confidence']};",
-                  f"{star_info['blinking_freq']};",
-                  f"{star_info['movement_vector']};",
-                  f"{star_info['last_positions']};",
+                  f"{star_info.last_times_detected};",
+                  f"{star_info.lifetime};",
+                  f"{star_info.left_lifetime};",
+                  f"{star_info.detection_confidence};",
+                  f"{star_info.blinking_freq};",
+                  f"{star_info.movement_vector};",
+                  f"{star_info.last_positions};",
                   file=file)
 
 
