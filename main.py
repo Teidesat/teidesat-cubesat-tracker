@@ -43,29 +43,22 @@ from src.image_processor import (
     detect_shooting_stars,
 )
 from src.star import Star
-
-# * Constants
-STAR_DETECTOR_THRESHOLD = 50
-FAST = True
-MIN_PRUNE_DISTANCE = 20.0
-
-SAT_DESIRED_BLINKING_FREQ = 15.0
-MOVEMENT_THRESHOLD = 3.0
-PX_SENSITIVITY = 8
-
-PATH_FRAME = Path("./data/images/original.jpg")
-PATH_VIDEO = Path("./data/videos/video4.mp4")
-PATH_SAT_LOG = Path("./data/logs/satellite_log.csv")
-
-RGB_IMAGE = True
-VIDEO_FROM_CAMERA = False
-
-SHOW_VIDEO_RESULT = True
-COLORIZED_TRACKED_STARS = False
-OUTPUT_VIDEO_TO_FILE = True
-PATH_OUTPUT_VIDEO = Path("./data/videos/video_output_" +
-                         datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".mp4")
-
+from constants import (
+    STAR_DETECTOR_THRESHOLD,
+    FAST,
+    MIN_PRUNE_DISTANCE,
+    SAT_DESIRED_BLINKING_FREQ,
+    MOVEMENT_THRESHOLD,
+    PX_SENSITIVITY,
+    PATH_VIDEO,
+    PATH_SAT_LOG,
+    RGB_IMAGE,
+    VIDEO_FROM_CAMERA,
+    SHOW_VIDEO_RESULT,
+    COLORIZED_TRACKED_STARS,
+    OUTPUT_VIDEO_TO_FILE,
+    PATH_OUTPUT_VIDEO,
+)
 
 def main():
     """ Main function to start the program execution. """

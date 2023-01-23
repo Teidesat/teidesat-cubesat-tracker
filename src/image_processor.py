@@ -10,19 +10,16 @@ from typing import Optional
 
 from src.star import Star
 
-# * Constants
-FAST = True
-MIN_PRUNE_DISTANCE = 20.0
-
-SAT_DESIRED_BLINKING_FREQ = 30.0
-VIDEO_FPS = 60.0
-
-DEFAULT_LEFT_LIFETIME = 10
-DEFAULT_VECTOR = (0.0, 0.0)
-
-MOVEMENT_THRESHOLD = 3.0
-MIN_DETECTION_CONFIDENCE = 20
-
+from constants import (
+    FAST,
+    MIN_PRUNE_DISTANCE,
+    SAT_DESIRED_BLINKING_FREQ,
+    VIDEO_FPS,
+    DEFAULT_LEFT_LIFETIME,
+    DEFAULT_VECTOR,
+    MOVEMENT_THRESHOLD,
+    MIN_DETECTION_CONFIDENCE,
+)
 
 def detect_stars(
         image,
