@@ -4,15 +4,14 @@
 TeideSat Satellite Tracking for the Optical Ground Station
 
 # ToDo: Check if this is correct
-#     This program is free software: you can redistribute it and/or modify it
-# under the terms of the GNU General Public License as published by the Free
-# Software Foundation, either version 3 of the License, or (at your option) any
-# later version.
-#     This program is distributed in the hope that it will be useful, but WITHOUT
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-# FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with
-# this program. If not, see <https://www.gnu.org/licenses/>.
+#     This program is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+#     This program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE. See the GNU General Public License for more details. You should
+# have received a copy of the GNU General Public License along with this program. If 
+# not, see <https://www.gnu.org/licenses/>.
 """  # ToDo: complete module docstring
 
 # ToDo: add the missing module information
@@ -29,8 +28,6 @@ __status__ = "Production"
 __version__ = "0.0.7"
 
 from copy import deepcopy
-from datetime import datetime
-from pathlib import Path
 import sys
 from time import perf_counter
 
@@ -60,8 +57,9 @@ from constants import (
     PATH_OUTPUT_VIDEO,
 )
 
+
 def main():
-    """ Main function to start the program execution. """
+    """Main function to start the program execution."""
 
     if VIDEO_FROM_CAMERA:
         video_path = 0  # Default webcam id
@@ -79,40 +77,38 @@ def main():
 
 
 def satellite_detection_test(
-        vid_cap,
-        sat_desired_blinking_freq: float = SAT_DESIRED_BLINKING_FREQ,
-        star_detector_threshold: int = STAR_DETECTOR_THRESHOLD,
-        fast: bool = FAST,
-        min_prune_distance: float = MIN_PRUNE_DISTANCE,
-        movement_threshold: float = MOVEMENT_THRESHOLD,
-        rgb_image: bool = RGB_IMAGE,
-        show_video_result: bool = SHOW_VIDEO_RESULT,
-        output_video_to_file: bool = OUTPUT_VIDEO_TO_FILE,
+    vid_cap,
+    sat_desired_blinking_freq: float = SAT_DESIRED_BLINKING_FREQ,
+    star_detector_threshold: int = STAR_DETECTOR_THRESHOLD,
+    fast: bool = FAST,
+    min_prune_distance: float = MIN_PRUNE_DISTANCE,
+    movement_threshold: float = MOVEMENT_THRESHOLD,
+    rgb_image: bool = RGB_IMAGE,
+    show_video_result: bool = SHOW_VIDEO_RESULT,
+    output_video_to_file: bool = OUTPUT_VIDEO_TO_FILE,
 ):
-    """ Function to detect and track the satellite. """
+    """Function to detect and track the satellite."""
 
     # if VIDEO_FROM_CAMERA this could not work
     video_fps = vid_cap.get(cv.CAP_PROP_FPS)
 
-    star_detector = cv.FastFeatureDetector_create(
-        threshold=star_detector_threshold)
+    star_detector = cv.FastFeatureDetector_create(threshold=star_detector_threshold)
 
     tracked_stars = {}
     satellite_log = []
 
     wait_time = 1
     wait_options = {
-        ord('z'): 1,
-        ord('x'): 100,
-        ord('c'): 1000,
-        ord('v'): 0,
+        ord("z"): 1,
+        ord("x"): 100,
+        ord("c"): 1000,
+        ord("v"): 0,
     }
 
     processed_frames = 0
     start_time = perf_counter()
 
-    output_video = (create_export_video_file(vid_cap)
-                    if output_video_to_file else None)
+    output_video = create_export_video_file(vid_cap) if output_video_to_file else None
 
     if show_video_result:
         cv.namedWindow("Satellite detection", cv.WINDOW_NORMAL)
@@ -126,23 +122,22 @@ def satellite_detection_test(
 
         gray = cv.cvtColor(frame, cv.COLOR_RGB2GRAY) if rgb_image else frame
 
-        new_star_positions = detect_stars(gray,
-                                          star_detector,
-                                          fast,
-                                          min_prune_distance)
+        new_star_positions = detect_stars(gray, star_detector, fast, min_prune_distance)
 
-        track_stars(new_star_positions,
-                    tracked_stars,
-                    sat_desired_blinking_freq,
-                    video_fps)
+        track_stars(
+            new_star_positions,
+            tracked_stars,
+            sat_desired_blinking_freq,
+            video_fps,
+        )
 
-        shooting_stars = detect_shooting_stars(tracked_stars,
-                                               movement_threshold)
+        shooting_stars = detect_shooting_stars(tracked_stars, movement_threshold)
 
         satellite = detect_blinking_star(shooting_stars)
 
-        show_frame = (frame.copy() if rgb_image
-                      else cv.cvtColor(frame, cv.COLOR_GRAY2RGB))
+        show_frame = (
+            frame.copy() if rgb_image else cv.cvtColor(frame, cv.COLOR_GRAY2RGB)
+        )
 
         # show_frame = draw_found_stars(show_frame, new_star_positions)
         show_frame = draw_tracked_stars(show_frame, tracked_stars)
@@ -160,7 +155,7 @@ def satellite_detection_test(
 
             key = cv.waitKey(wait_time)
 
-            if key == ord('q'):
+            if key == ord("q"):
                 break
 
             wait_time = wait_options.get(key, wait_time)
@@ -175,10 +170,10 @@ def satellite_detection_test(
 
 
 def print_time_statistics(
-        processed_frames: int,
-        start_time: float,
+    processed_frames: int,
+    start_time: float,
 ):
-    """ Function to print processing time statistics. """
+    """Function to print processing time statistics."""
 
     processing_time = perf_counter() - start_time
 
@@ -189,19 +184,21 @@ def print_time_statistics(
 
 
 def draw_found_stars(
-        show_frame,
-        found_stars: list[tuple[int, int]],
-        radius: int = PX_SENSITIVITY,
-        color: tuple = (0, 0, 100),
-        thickness: int = 2,
+    show_frame,
+    found_stars: list[tuple[int, int]],
+    radius: int = PX_SENSITIVITY,
+    color: tuple = (0, 0, 100),
+    thickness: int = 2,
 ):
-    """ Function to draw in the given frame a circle around every found
-    star. """
+    """Function to draw in the given frame a circle around every found star."""
 
     for star in found_stars:
         cv.circle(
             show_frame,
-            center=(int(star[0]), int(star[1])),
+            center=(
+                int(star[0]),
+                int(star[1]),
+            ),
             radius=radius,
             color=color,
             thickness=thickness,
@@ -211,15 +208,14 @@ def draw_found_stars(
 
 
 def draw_tracked_stars(
-        show_frame,
-        tracked_stars: dict[int, Star],
-        radius: int = PX_SENSITIVITY,
-        color: tuple = None,
-        thickness: int = 2,
-        colorized_tracked_stars: bool = COLORIZED_TRACKED_STARS,
+    show_frame,
+    tracked_stars: dict[int, Star],
+    radius: int = PX_SENSITIVITY,
+    color: tuple = None,
+    thickness: int = 2,
+    colorized_tracked_stars: bool = COLORIZED_TRACKED_STARS,
 ):
-    """ Function to draw in the given frame a circle around every tracked
-    star. """
+    """Function to draw in the given frame a circle around every tracked star."""
 
     for star in tracked_stars.values():
 
@@ -233,8 +229,10 @@ def draw_tracked_stars(
 
         cv.circle(
             show_frame,
-            center=(int(star.last_positions[-1][0]),
-                    int(star.last_positions[-1][1])),
+            center=(
+                int(star.last_positions[-1][0]),
+                int(star.last_positions[-1][1]),
+            ),
             radius=radius,
             color=draw_color,
             thickness=thickness,
@@ -244,20 +242,21 @@ def draw_tracked_stars(
 
 
 def draw_shooting_stars(
-        show_frame,
-        shooting_stars: dict[int, Star],
-        radius: int = PX_SENSITIVITY,
-        color: tuple = (0, 200, 200),
-        thickness: int = 2,
+    show_frame,
+    shooting_stars: dict[int, Star],
+    radius: int = PX_SENSITIVITY,
+    color: tuple = (0, 200, 200),
+    thickness: int = 2,
 ):
-    """ Function to draw in the given frame a circle around every shooting
-    star. """
+    """Function to draw in the given frame a circle around every shooting star."""
 
     for star in shooting_stars.values():
         cv.circle(
             show_frame,
-            center=(int(star.last_positions[-1][0]),
-                    int(star.last_positions[-1][1])),
+            center=(
+                int(star.last_positions[-1][0]),
+                int(star.last_positions[-1][1]),
+            ),
             radius=radius,
             color=color,
             thickness=thickness,
@@ -267,19 +266,20 @@ def draw_shooting_stars(
 
 
 def draw_satellite(
-        show_frame,
-        satellite: tuple[int, Star],
-        radius: int = PX_SENSITIVITY,
-        color: tuple = (0, 200, 0),
-        thickness: int = 2,
+    show_frame,
+    satellite: tuple[int, Star],
+    radius: int = PX_SENSITIVITY,
+    color: tuple = (0, 200, 0),
+    thickness: int = 2,
 ):
-    """ Function to draw in the given frame a circle around the satellite
-    detected. """
+    """Function to draw in the given frame a circle around the satellite detected."""
 
     cv.circle(
         show_frame,
-        center=(int(satellite[1].last_positions[-1][0]),
-                int(satellite[1].last_positions[-1][1])),
+        center=(
+            int(satellite[1].last_positions[-1][0]),
+            int(satellite[1].last_positions[-1][1]),
+        ),
         radius=radius,
         color=color,
         thickness=thickness,
@@ -289,7 +289,7 @@ def draw_satellite(
 
 
 def create_export_video_file(vid_cap):
-    """ Function to create a video file to export the processed frames. """
+    """Function to create a video file to export the processed frames."""
 
     width = int(vid_cap.get(cv.CAP_PROP_FRAME_WIDTH))
     height = int(vid_cap.get(cv.CAP_PROP_FRAME_HEIGHT))
@@ -301,7 +301,7 @@ def create_export_video_file(vid_cap):
 
     output_video = cv.VideoWriter(
         str(PATH_OUTPUT_VIDEO),
-        cv.VideoWriter_fourcc(*'mp4v'),
+        cv.VideoWriter_fourcc(*"mp4v"),
         fps,
         (width, height),
     )
@@ -313,29 +313,33 @@ def create_export_video_file(vid_cap):
 
 
 def export_satellite_log(satellite_log: list[tuple[int, Star]]):
-    """ Function to export the satellite log into a file. """
+    """Function to export the satellite log into a file."""
 
     with open(str(PATH_SAT_LOG), "w", encoding="utf-8-sig") as file:
-        print("id;",
-              "last_times_detected;",
-              "lifetime;",
-              "left_lifetime;",
-              "detection_confidence;",
-              "blinking_freq;",
-              "movement_vector;",
-              "last_positions;",
-              file=file)
+        print(
+            "id;",
+            "last_times_detected;",
+            "lifetime;",
+            "left_lifetime;",
+            "detection_confidence;",
+            "blinking_freq;",
+            "movement_vector;",
+            "last_positions;",
+            file=file,
+        )
 
         for star_id, star_info in satellite_log:
-            print(f"{star_id};",
-                  f"{star_info.last_times_detected};",
-                  f"{star_info.lifetime};",
-                  f"{star_info.left_lifetime};",
-                  f"{star_info.detection_confidence};",
-                  f"{star_info.blinking_freq};",
-                  f"{star_info.movement_vector};",
-                  f"{star_info.last_positions};",
-                  file=file)
+            print(
+                f"{star_id};",
+                f"{star_info.last_times_detected};",
+                f"{star_info.lifetime};",
+                f"{star_info.left_lifetime};",
+                f"{star_info.detection_confidence};",
+                f"{star_info.blinking_freq};",
+                f"{star_info.movement_vector};",
+                f"{star_info.last_positions};",
+                file=file,
+            )
 
 
 if __name__ == "__main__":

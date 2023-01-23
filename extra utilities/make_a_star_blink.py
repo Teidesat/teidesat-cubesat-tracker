@@ -1,8 +1,8 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Simple script to process a video and simulate a blinking satellite to test the
- main program.
+Simple script to process a video and simulate a blinking satellite to test the main
+ program.
 """
 
 from datetime import datetime
@@ -13,8 +13,11 @@ import cv2 as cv
 import numpy as np
 
 INPUT = Path("../data/videos/video3.mp4")
-OUTPUT = Path("../data/videos/video_output_" +
-              datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".mp4")
+OUTPUT = Path(
+    "../data/videos/video_output_"
+    + datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    + ".mp4"
+)
 
 PX_SENSITIVITY = 10
 
@@ -23,7 +26,7 @@ remove_star = False
 
 
 def get_click_location(event, x_coord, y_coord, flags, param):
-    """ Mouse callback function to get the mouse location when clicked. """
+    """Mouse callback function to get the mouse location when clicked."""
 
     global click_location, remove_star
 
@@ -33,16 +36,17 @@ def get_click_location(event, x_coord, y_coord, flags, param):
 
 
 def get_avg_color(frame, radius):
-    """ Function to get the average surrounding color of the selected
-    location. """
+    """Function to get the average surrounding color of the selected location."""
 
     global click_location
 
     x_coord, y_coord = click_location
-    assert isinstance(x_coord, int) and isinstance(y_coord,  int)
+    assert isinstance(x_coord, int) and isinstance(y_coord, int)
 
-    roi = frame[(y_coord - radius):(y_coord + radius),
-                (x_coord - radius):(x_coord + radius)]
+    roi = frame[
+        (y_coord - radius) : (y_coord + radius),
+        (x_coord - radius) : (x_coord + radius),
+    ]
 
     avg_color_per_row = np.average(roi, axis=0)
     avg_color = np.average(avg_color_per_row, axis=0)
@@ -51,7 +55,7 @@ def get_avg_color(frame, radius):
 
 
 def make_a_star_blink(input_video_path: Path, output_video_path: Path):
-    """ Function to make a star blink by removing it from alternate frames. """
+    """Function to make a star blink by removing it from alternate frames."""
 
     global click_location, remove_star
 
@@ -69,7 +73,7 @@ def make_a_star_blink(input_video_path: Path, output_video_path: Path):
 
     output_video = cv.VideoWriter(
         str(output_video_path),
-        cv.VideoWriter_fourcc(*'mp4v'),
+        cv.VideoWriter_fourcc(*"mp4v"),
         fps,
         (width, height),
     )
@@ -118,13 +122,13 @@ def make_a_star_blink(input_video_path: Path, output_video_path: Path):
 
         key = cv.waitKey(1)
 
-        if key == ord('s'):
+        if key == ord("s"):
             output_video.write(frame)
 
             success, frame = vid_cap.read()
             processed_frames += 1
 
-        if key == ord('q'):
+        if key == ord("q"):
             break
 
     cv.destroyAllWindows()

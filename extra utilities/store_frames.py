@@ -14,7 +14,7 @@ OUTPUT = Path("../data/frames")
 
 
 def store_frames(video_path: Path, output_dir: Path):
-    """ Function to store the frames from a given video to process. """
+    """Function to store the frames from a given video to process."""
 
     output_subdir = output_dir / video_path.stem
     output_subdir.mkdir(parents=True, exist_ok=True)

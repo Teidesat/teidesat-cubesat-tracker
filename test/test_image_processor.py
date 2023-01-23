@@ -1,8 +1,8 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-This program tests the correct functionality of the functions at
- src/image_processor.py file.
+This program tests the correct functionality of the functions at src/image_processor.py
+ file.
 """
 
 from pathlib import Path
@@ -24,14 +24,14 @@ from src.star import Star
 
 
 class DataGettersTestCase(unittest.TestCase):
-    """ Class to test the image_processor script. """
+    """Class to test the image_processor script."""
 
     @classmethod
     def setUpClass(cls):
         cls.star_detector = cv.FastFeatureDetector_create(threshold=50)
 
     def test_detect_stars_1(self):
-        """ detect_stars can detect one star. """
+        """detect_stars can detect one star."""
 
         image = cv.imread(str(Path("./data/images/stellarium-007.png")))
 
@@ -44,7 +44,7 @@ class DataGettersTestCase(unittest.TestCase):
         self.assertEqual(expected_result, result)
 
     def test_detect_stars_2(self):
-        """ detect_stars can detect multiple stars. """
+        """detect_stars can detect multiple stars."""
 
         image = cv.imread(str(Path("./data/images/stellarium-003.png")))
 
@@ -65,7 +65,7 @@ class DataGettersTestCase(unittest.TestCase):
         self.assertEqual(expected_result, result)
 
     def test_prune_close_points_1(self):
-        """ prune_close_points can filter a duplicate star. """
+        """prune_close_points can filter a duplicate star."""
 
         star_positions = [
             (8, 8),
@@ -77,7 +77,7 @@ class DataGettersTestCase(unittest.TestCase):
         self.assertEqual(expected_result, result)
 
     def test_prune_close_points_2(self):
-        """ prune_close_points can ignore a distant star . """
+        """prune_close_points can ignore a distant star."""
 
         star_positions = [
             (8, 8),
@@ -86,14 +86,14 @@ class DataGettersTestCase(unittest.TestCase):
         ]
         expected_result = [
             (10, 10),
-            (15, 15)
+            (15, 15),
         ]
 
         result = prune_close_points(star_positions, min_prune_distance=5)
         self.assertEqual(expected_result, result)
 
     def test_track_stars_0(self):
-        """ track_stars can do nothing if no stars are given. """
+        """track_stars can do nothing if no stars are given."""
 
         star_positions = []
         detected_stars = {}
@@ -103,7 +103,7 @@ class DataGettersTestCase(unittest.TestCase):
         self.assertEqual(expected_result, detected_stars)
 
     def test_track_stars_1(self):
-        """ track_stars can add a new star. """
+        """track_stars can add a new star."""
 
         random.random = Mock(return_value=1)
         Star._id = MagicMock()
@@ -129,21 +129,24 @@ class DataGettersTestCase(unittest.TestCase):
             )
         }
 
-        track_stars(star_positions,
-                    detected_stars,
-                    sat_desired_blinking_freq=sat_desired_blinking_freq,
-                    video_fps=video_fps,
-                    default_left_lifetime=default_left_lifetime,
-                    default_vector=default_movement_vector)
+        track_stars(
+            star_positions,
+            detected_stars,
+            sat_desired_blinking_freq=sat_desired_blinking_freq,
+            video_fps=video_fps,
+            default_left_lifetime=default_left_lifetime,
+            default_vector=default_movement_vector,
+        )
 
         self.assertEqual(expected_result.keys(), detected_stars.keys())
 
-        for expected_star, detected_star in zip(expected_result.values(),
-                                                detected_stars.values()):
+        for expected_star, detected_star in zip(
+            expected_result.values(), detected_stars.values()
+        ):
             self.assertEqual(expected_star.__dict__, detected_star.__dict__)
 
     def test_track_stars_2(self):
-        """ track_stars can keep track of a moving star. """
+        """track_stars can keep track of a moving star."""
 
         sat_desired_blinking_freq = 30
         video_fps = 60
@@ -174,20 +177,23 @@ class DataGettersTestCase(unittest.TestCase):
             )
         }
 
-        track_stars(star_positions,
-                    detected_stars,
-                    sat_desired_blinking_freq=sat_desired_blinking_freq,
-                    video_fps=video_fps,
-                    default_left_lifetime=default_left_lifetime)
+        track_stars(
+            star_positions,
+            detected_stars,
+            sat_desired_blinking_freq=sat_desired_blinking_freq,
+            video_fps=video_fps,
+            default_left_lifetime=default_left_lifetime,
+        )
 
         self.assertEqual(expected_result.keys(), detected_stars.keys())
 
-        for expected_star, detected_star in zip(expected_result.values(),
-                                                detected_stars.values()):
+        for expected_star, detected_star in zip(
+            expected_result.values(), detected_stars.values()
+        ):
             self.assertEqual(expected_star.__dict__, detected_star.__dict__)
 
     def test_track_stars_3(self):
-        """ track_stars can remember a hidden star. """
+        """track_stars can remember a hidden star."""
 
         sat_desired_blinking_freq = 30
         video_fps = 60
@@ -217,19 +223,22 @@ class DataGettersTestCase(unittest.TestCase):
             )
         }
 
-        track_stars(star_positions,
-                    detected_stars,
-                    sat_desired_blinking_freq=sat_desired_blinking_freq,
-                    video_fps=video_fps)
+        track_stars(
+            star_positions,
+            detected_stars,
+            sat_desired_blinking_freq=sat_desired_blinking_freq,
+            video_fps=video_fps,
+        )
 
         self.assertEqual(expected_result.keys(), detected_stars.keys())
 
-        for expected_star, detected_star in zip(expected_result.values(),
-                                                detected_stars.values()):
+        for expected_star, detected_star in zip(
+            expected_result.values(), detected_stars.values()
+        ):
             self.assertEqual(expected_star.__dict__, detected_star.__dict__)
 
     def test_track_stars_4(self):
-        """ track_stars can forget a star not found for a long time. """
+        """track_stars can forget a star not found for a long time."""
 
         star_positions = []
         detected_stars = {
@@ -245,8 +254,8 @@ class DataGettersTestCase(unittest.TestCase):
         self.assertEqual(expected_result, detected_stars)
 
     def test_detect_shooting_stars_1(self):
-        """ detect_shooting_stars can filter the detected stars to get the
-        shooting stars or satellites only. """
+        """detect_shooting_stars can filter the detected stars to get the
+        shooting stars or satellites only."""
 
         random.random = Mock(return_value=1)
         Star._id = MagicMock()
@@ -268,13 +277,14 @@ class DataGettersTestCase(unittest.TestCase):
 
         self.assertEqual(expected_result.keys(), result.keys())
 
-        for expected_star, result_star in zip(expected_result.values(),
-                                              result.values()):
+        for expected_star, result_star in zip(
+            expected_result.values(), result.values()
+        ):
             self.assertEqual(expected_star.__dict__, result_star.__dict__)
 
     def test_detect_shooting_stars_2(self):
-        """ detect_shooting_stars can ignore all stars if they have a not big
-        enough movement vector. """
+        """detect_shooting_stars can ignore all stars if they have a not big
+        enough movement vector."""
 
         detected_stars = {
             0: Star(movement_vector=(1, 0)),
@@ -290,8 +300,8 @@ class DataGettersTestCase(unittest.TestCase):
         self.assertEqual(expected_result, result)
 
     def test_detect_blinking_star_1(self):
-        """ detect_blinking_star can detect the star that has the highest
-        confidence of being the satellite. """
+        """detect_blinking_star can detect the star that has the highest
+        confidence of being the satellite."""
 
         detected_stars = {
             0: Star(detection_confidence=6),
@@ -303,15 +313,15 @@ class DataGettersTestCase(unittest.TestCase):
 
         star_id, blinking_star = detect_blinking_star(
             detected_stars,
-            min_detection_confidence=20
+            min_detection_confidence=20,
         )
 
         self.assertEqual(2, star_id)
         self.assertEqual(8342, blinking_star.detection_confidence)
 
     def test_detect_blinking_star_2(self):
-        """ detect_blinking_star can ignore all stars if they have not enough
-        confidence. """
+        """detect_blinking_star can ignore all stars if they have not enough
+        confidence."""
 
         detected_stars = {
             0: Star(detection_confidence=6),
@@ -322,8 +332,7 @@ class DataGettersTestCase(unittest.TestCase):
         }
         expected_result = None
 
-        result = detect_blinking_star(detected_stars,
-                                      min_detection_confidence=20)
+        result = detect_blinking_star(detected_stars, min_detection_confidence=20)
         self.assertEqual(expected_result, result)
 
 

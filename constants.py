@@ -27,8 +27,11 @@ VIDEO_FPS = 60.0
 SHOW_VIDEO_RESULT = True
 COLORIZED_TRACKED_STARS = False
 OUTPUT_VIDEO_TO_FILE = True
-PATH_OUTPUT_VIDEO = Path("./data/videos/video_output_" +
-                         datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".mp4")
+PATH_OUTPUT_VIDEO = Path(
+    "./data/videos/video_output_"
+    + datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    + ".mp4"
+)
 
 DEFAULT_LEFT_LIFETIME = 10
 DEFAULT_VECTOR = (0.0, 0.0)
