@@ -5,6 +5,7 @@ File with the implementation of the Star class.
 """
 
 from colorsys import hsv_to_rgb
+from itertools import pairwise
 from math import dist
 import random
 from time import time
@@ -183,8 +184,11 @@ class Star:
             return default_vector
 
         movement_vectors = [
-            (pos_2[0] - pos_1[0], pos_2[1] - pos_1[1])
-            for pos_1, pos_2 in zip(self.last_positions, self.last_positions[1:])
+            (
+                pos_2[0] - pos_1[0],
+                pos_2[1] - pos_1[1],
+            )
+            for pos_1, pos_2 in pairwise(self.last_positions)
         ]
 
         mean_vector = get_mean_vector(movement_vectors, default_vector)
