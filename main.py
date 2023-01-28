@@ -140,15 +140,15 @@ def satellite_detection_test(
             frame.copy() if rgb_image else cv.cvtColor(frame, cv.COLOR_GRAY2RGB)
         )
 
-        # show_frame = draw_found_stars(show_frame, new_star_positions)
-        show_frame = draw_tracked_stars(show_frame, tracked_stars)
-        show_frame = draw_shooting_stars(show_frame, shooting_stars)
-        show_frame = draw_path(show_frame, shooting_stars)
+        # draw_found_stars(show_frame, new_star_positions)
+        draw_tracked_stars(show_frame, tracked_stars)
+        draw_shooting_stars(show_frame, shooting_stars)
+        draw_path(show_frame, shooting_stars)
 
         if satellite is not None:
             satellite_log.append(deepcopy(satellite))
-            show_frame = draw_satellite(show_frame, satellite)
-            show_frame = draw_path(show_frame, satellite)
+            draw_satellite(show_frame, satellite)
+            draw_path(show_frame, satellite)
 
         if output_video_to_file:
             output_video.write(show_frame)
@@ -193,7 +193,12 @@ def draw_found_stars(
     color: tuple = (0, 0, 100),
     thickness: int = 2,
 ):
-    """Function to draw in the given frame a circle around every found star."""
+    """
+    Function to draw in the given frame a circle around every found star.
+
+    Note: This function modifies data from 'show_frame' parameter without an explicit
+    return statement for memory usage reduction purposes.
+    """
 
     for star in found_stars:
         cv.circle(
@@ -207,8 +212,6 @@ def draw_found_stars(
             thickness=thickness,
         )
 
-    return show_frame
-
 
 def draw_tracked_stars(
     show_frame,
@@ -218,7 +221,12 @@ def draw_tracked_stars(
     thickness: int = 2,
     colorized_tracked_stars: bool = COLORIZED_TRACKED_STARS,
 ):
-    """Function to draw in the given frame a circle around every tracked star."""
+    """
+    Function to draw in the given frame a circle around every tracked star.
+
+    Note: This function modifies data from 'show_frame' parameter without an explicit
+    return statement for memory usage reduction purposes.
+    """
 
     for star in tracked_stars.values():
 
@@ -241,8 +249,6 @@ def draw_tracked_stars(
             thickness=thickness,
         )
 
-    return show_frame
-
 
 def draw_shooting_stars(
     show_frame,
@@ -251,7 +257,12 @@ def draw_shooting_stars(
     color: tuple = (0, 200, 200),
     thickness: int = 2,
 ):
-    """Function to draw in the given frame a circle around every shooting star."""
+    """
+    Function to draw in the given frame a circle around every shooting star.
+
+    Note: This function modifies data from 'show_frame' parameter without an explicit
+    return statement for memory usage reduction purposes.
+    """
 
     for star in shooting_stars.values():
         cv.circle(
@@ -265,8 +276,6 @@ def draw_shooting_stars(
             thickness=thickness,
         )
 
-    return show_frame
-
 
 def draw_satellite(
     show_frame,
@@ -275,7 +284,12 @@ def draw_satellite(
     color: tuple = (0, 200, 0),
     thickness: int = 2,
 ):
-    """Function to draw in the given frame a circle around the satellite detected."""
+    """
+    Function to draw in the given frame a circle around the satellite detected.
+
+    Note: This function modifies data from 'show_frame' parameter without an explicit
+    return statement for memory usage reduction purposes.
+    """
 
     cv.circle(
         show_frame,
@@ -288,8 +302,6 @@ def draw_satellite(
         thickness=thickness,
     )
 
-    return show_frame
-
 
 def draw_path(
     show_frame,
@@ -297,8 +309,12 @@ def draw_path(
     color: tuple = (200, 200, 0),
     thickness: int = 1,
 ):
-    """Function to draw in the given frame a line through the last detected
+    """
+    Function to draw in the given frame a line through the last detected
     positions of the given objects.
+
+    Note: This function modifies data from 'show_frame' parameter without an explicit
+    return statement for memory usage reduction purposes.
     """
 
     targets_info = (
@@ -319,8 +335,6 @@ def draw_path(
                 color=color,
                 thickness=thickness,
             )
-
-    return show_frame
 
 
 def create_export_video_file(vid_cap):
