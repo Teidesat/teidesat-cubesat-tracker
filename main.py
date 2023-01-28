@@ -28,6 +28,7 @@ __status__ = "Production"
 __version__ = "0.0.7"
 
 from copy import deepcopy
+from itertools import pairwise
 import sys
 from time import perf_counter
 
@@ -142,10 +143,12 @@ def satellite_detection_test(
         # show_frame = draw_found_stars(show_frame, new_star_positions)
         show_frame = draw_tracked_stars(show_frame, tracked_stars)
         show_frame = draw_shooting_stars(show_frame, shooting_stars)
+        show_frame = draw_path(show_frame, shooting_stars)
 
         if satellite is not None:
             satellite_log.append(deepcopy(satellite))
             show_frame = draw_satellite(show_frame, satellite)
+            show_frame = draw_path(show_frame, satellite)
 
         if output_video_to_file:
             output_video.write(show_frame)
@@ -284,6 +287,38 @@ def draw_satellite(
         color=color,
         thickness=thickness,
     )
+
+    return show_frame
+
+
+def draw_path(
+    show_frame,
+    objects_info,
+    color: tuple = (200, 200, 0),
+    thickness: int = 1,
+):
+    """Function to draw in the given frame a line through the last detected
+    positions of the given objects.
+    """
+
+    targets_info = (
+        {objects_info[0]: objects_info[1]}
+        if isinstance(objects_info, tuple)
+        else objects_info
+    )
+
+    for target in targets_info.values():
+        last_positions = [
+            [round(axis) for axis in pos] for pos in target.last_positions
+        ]
+        for pos_1, pos_2 in pairwise(last_positions):
+            cv.line(
+                show_frame,
+                pt1=pos_1,
+                pt2=pos_2,
+                color=color,
+                thickness=thickness,
+            )
 
     return show_frame
 
