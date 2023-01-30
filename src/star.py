@@ -74,10 +74,16 @@ class Star:
             else color
         )
 
+    def __hash__(self):
+        return self.id
+
+    def __eq__(self, other):
+        return isinstance(other, Star) and self.__dict__ == other.__dict__
+
     def update_info(
         self,
         star_positions: list[tuple[int, int]],
-        detected_stars: dict[int],
+        detected_stars: set,  # set[Star]
         max_move_distance: float = MAX_MOVE_DISTANCE,
         sat_desired_blinking_freq: float = SAT_DESIRED_BLINKING_FREQ,
         video_fps: float = VIDEO_FPS,
@@ -101,7 +107,7 @@ class Star:
 
         if new_star_pos is None:
             if self.left_lifetime == 0:
-                detected_stars.pop(self.id)
+                detected_stars.remove(self)
                 return
 
             self.last_times_detected.append(0)

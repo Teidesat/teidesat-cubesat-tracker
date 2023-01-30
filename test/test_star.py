@@ -81,6 +81,57 @@ class DataGettersTestCase(unittest.TestCase):
 
         self.assertEqual(expected_result, result.__dict__)
 
+    def test_eq_1(self):
+        """__eq__ can detect two identical stars."""
+
+        star_1 = Star(
+            last_positions=[(10, 15)],
+            last_times_detected=[1],
+            lifetime=3,
+            left_lifetime=7,
+            blinking_freq=15,
+            detection_confidence=-2,
+            movement_vector=(0, 0),
+            color=[0, 0, 100],
+        )
+
+        star_2 = Star(
+            last_positions=[(10, 15)],
+            last_times_detected=[1],
+            lifetime=3,
+            left_lifetime=7,
+            blinking_freq=15,
+            detection_confidence=-2,
+            movement_vector=(0, 0),
+            color=[0, 0, 100],
+        )
+
+        self.assertEqual(star_1, star_2)
+
+    def test_eq_2(self):
+        """__eq__ can detect two different stars."""
+
+        star_1 = Star(
+            last_positions=[(10, 15)],
+            last_times_detected=[1],
+            lifetime=3,
+            left_lifetime=7,
+            blinking_freq=15,
+            detection_confidence=-2,
+            movement_vector=(0, 0),
+            color=[0, 0, 100],
+        )
+
+        star_2 = Star(
+            last_positions=[(11, 16)],
+            last_times_detected=[1, 0, 0],
+            lifetime=3,
+            left_lifetime=8,
+            detection_confidence=-6,
+        )
+
+        self.assertNotEqual(star_1, star_2)
+
     def test_update_info_1(self):
         """update_info can add the new star position and update the star information
         accordingly."""
@@ -102,18 +153,19 @@ class DataGettersTestCase(unittest.TestCase):
 
         default_left_lifetime = 20
         video_fps = 30
-        detected_stars = {0: star}
-        expected_star = Star(
-            last_positions=[(10, 15), (11, 16)],
-            last_times_detected=[0, 1],
-            lifetime=4,
-            left_lifetime=default_left_lifetime,
-            blinking_freq=(video_fps / 2),
-            detection_confidence=-1,
-            movement_vector=(1, 1),
-        )
+        detected_stars = {star}
         expected_positions = []
-        expected_stars = {0: expected_star}
+        expected_stars = {
+            Star(
+                last_positions=[(10, 15), (11, 16)],
+                last_times_detected=[0, 1],
+                lifetime=4,
+                left_lifetime=default_left_lifetime,
+                blinking_freq=(video_fps / 2),
+                detection_confidence=-1,
+                movement_vector=(1, 1),
+            )
+        }
 
         star.update_info(
             star_positions,
@@ -127,12 +179,7 @@ class DataGettersTestCase(unittest.TestCase):
         )
 
         self.assertEqual(expected_positions, star_positions)
-        self.assertEqual(expected_stars.keys(), detected_stars.keys())
-
-        for expected_star, detected_star in zip(
-            expected_stars.values(), detected_stars.values()
-        ):
-            self.assertEqual(expected_star.__dict__, detected_star.__dict__)
+        self.assertEqual(expected_stars, detected_stars)
 
     def test_update_info_2(self):
         """update_info can reduce the lifetime of the star if it has no new position and
@@ -151,35 +198,37 @@ class DataGettersTestCase(unittest.TestCase):
             detection_confidence=-6,
         )
 
-        detected_stars = {0: star}
-        expected_star = Star(
-            last_positions=[(10, 15)],
-            last_times_detected=[0, 0, 0],
-            lifetime=4,
-            left_lifetime=7,
-            blinking_freq=0,
-            detection_confidence=-8,
-        )
-        expected_result = {0: expected_star}
+        detected_stars = {star}
+        expected_positions = []
+        expected_stars = {
+            Star(
+                last_positions=[(10, 15)],
+                last_times_detected=[0, 0, 0],
+                lifetime=4,
+                left_lifetime=7,
+                blinking_freq=0,
+                detection_confidence=-8,
+            )
+        }
 
         star.update_info(star_positions, detected_stars, max_history_length=3)
-        self.assertEqual(expected_result.keys(), detected_stars.keys())
 
-        for expected_star, detected_star in zip(
-            expected_result.values(), detected_stars.values()
-        ):
-            self.assertEqual(expected_star.__dict__, detected_star.__dict__)
+        self.assertEqual(expected_positions, star_positions)
+        self.assertEqual(expected_stars, detected_stars)
 
     def test_update_info_3(self):
         """update_info can forget a star that has no left lifetime."""
 
         star = Star(left_lifetime=0)
         star_positions = []
-        detected_stars = {0: star}
-        expected_result = {}
+        detected_stars = {star}
+        expected_positions = []
+        expected_stars = set()
 
         star.update_info(star_positions, detected_stars)
-        self.assertEqual(expected_result, detected_stars)
+
+        self.assertEqual(expected_positions, star_positions)
+        self.assertEqual(expected_stars, detected_stars)
 
     def test_get_new_star_position_1(self):
         """get_new_star_position can get the new position if it coincides with the

@@ -54,7 +54,7 @@ def prune_close_points(
 
 def track_stars(
     star_positions: list[tuple[int, int]],
-    detected_stars: dict[int, Star],
+    detected_stars: set[Star],
     sat_desired_blinking_freq: float = SAT_DESIRED_BLINKING_FREQ,
     video_fps: float = VIDEO_FPS,
     default_left_lifetime: int = DEFAULT_LEFT_LIFETIME,
@@ -68,8 +68,8 @@ def track_stars(
     """
 
     # Update previously detected stars
-    for old_star_id in list(detected_stars.keys()):
-        detected_stars[old_star_id].update_info(
+    for old_star in detected_stars.copy():
+        old_star.update_info(
             star_positions,
             detected_stars,
             sat_desired_blinking_freq=sat_desired_blinking_freq,
@@ -80,51 +80,49 @@ def track_stars(
 
     # Add newly detected stars
     for star_position in star_positions:
-        new_star = Star(
-            last_positions=[star_position],
-            last_times_detected=[1],
-            lifetime=1,
-            left_lifetime=default_left_lifetime,
-            blinking_freq=video_fps,
-            detection_confidence=0,
-            movement_vector=default_vector,
+        detected_stars.add(
+            Star(
+                last_positions=[star_position],
+                last_times_detected=[1],
+                lifetime=1,
+                left_lifetime=default_left_lifetime,
+                blinking_freq=video_fps,
+                detection_confidence=0,
+                movement_vector=default_vector,
+            )
         )
-
-        detected_stars[new_star.id] = new_star
 
 
 def detect_shooting_stars(
-    detected_stars: dict[int, Star],
+    detected_stars: set[Star],
     movement_threshold: float = MOVEMENT_THRESHOLD,
-) -> dict[int, Star]:
+) -> set[Star]:
     """Function to detect which of the found stars are shooting stars or satellites."""
 
     return {
-        star_id: star_info
-        for star_id, star_info in detected_stars.items()
-        if (abs(star_info.movement_vector[0]) + abs(star_info.movement_vector[1]))
+        star
+        for star in detected_stars
+        if (abs(star.movement_vector[0]) + abs(star.movement_vector[1]))
         >= movement_threshold
     }
 
 
 def detect_blinking_star(
-    detected_stars: dict[int, Star],
+    detected_stars: set[Star],
     min_detection_confidence: float = MIN_DETECTION_CONFIDENCE,
-) -> Optional[tuple[int, Star]]:
+) -> Optional[Star]:
     """Function to detect which one of the found stars has the highest confidence of
     being the satellite."""
 
     blinking_star = max(
-        detected_stars.items(),
-        key=lambda star: star[1].detection_confidence,
+        detected_stars,
+        key=lambda star: star.detection_confidence,
         default=None,
     )
 
-    assert blinking_star is None or isinstance(blinking_star, tuple)
-
     if (
         blinking_star is not None
-        and blinking_star[1].detection_confidence > min_detection_confidence
+        and blinking_star.detection_confidence > min_detection_confidence
     ):
         return blinking_star
 

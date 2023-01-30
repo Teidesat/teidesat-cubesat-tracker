@@ -25,7 +25,7 @@ __deprecated__ = False
 # __license__ = "GPLv3"
 __maintainer__ = "Sergio Tabares Hernández"
 __status__ = "Production"
-__version__ = "0.0.7"
+__version__ = "0.0.8"
 
 from copy import deepcopy
 from itertools import pairwise
@@ -95,8 +95,8 @@ def satellite_detection_test(
 
     star_detector = cv.FastFeatureDetector_create(threshold=star_detector_threshold)
 
-    tracked_stars = {}
-    satellite_log = []
+    tracked_stars: set[Star] = set()
+    satellite_log: list[Star] = []
 
     wait_time = 1
     wait_options = {
@@ -215,7 +215,7 @@ def draw_found_stars(
 
 def draw_tracked_stars(
     show_frame,
-    tracked_stars: dict[int, Star],
+    tracked_stars: set[Star],
     radius: int = PX_SENSITIVITY,
     color: tuple = None,
     thickness: int = 2,
@@ -228,7 +228,7 @@ def draw_tracked_stars(
     return statement for memory usage reduction purposes.
     """
 
-    for star in tracked_stars.values():
+    for star in tracked_stars:
 
         if color is None:
             if colorized_tracked_stars:
@@ -252,7 +252,7 @@ def draw_tracked_stars(
 
 def draw_shooting_stars(
     show_frame,
-    shooting_stars: dict[int, Star],
+    shooting_stars: set[Star],
     radius: int = PX_SENSITIVITY,
     color: tuple = (0, 200, 200),
     thickness: int = 2,
@@ -264,7 +264,7 @@ def draw_shooting_stars(
     return statement for memory usage reduction purposes.
     """
 
-    for star in shooting_stars.values():
+    for star in shooting_stars:
         cv.circle(
             show_frame,
             center=(
@@ -279,7 +279,7 @@ def draw_shooting_stars(
 
 def draw_satellite(
     show_frame,
-    satellite: tuple[int, Star],
+    satellite: Star,
     radius: int = PX_SENSITIVITY,
     color: tuple = (0, 200, 0),
     thickness: int = 2,
@@ -294,8 +294,8 @@ def draw_satellite(
     cv.circle(
         show_frame,
         center=(
-            int(satellite[1].last_positions[-1][0]),
-            int(satellite[1].last_positions[-1][1]),
+            int(satellite.last_positions[-1][0]),
+            int(satellite.last_positions[-1][1]),
         ),
         radius=radius,
         color=color,
@@ -305,7 +305,7 @@ def draw_satellite(
 
 def draw_path(
     show_frame,
-    objects_info,
+    targets,
     color: tuple = (200, 200, 0),
     thickness: int = 1,
 ):
@@ -317,13 +317,7 @@ def draw_path(
     return statement for memory usage reduction purposes.
     """
 
-    targets_info = (
-        {objects_info[0]: objects_info[1]}
-        if isinstance(objects_info, tuple)
-        else objects_info
-    )
-
-    for target in targets_info.values():
+    for target in {targets} if isinstance(targets, Star) else targets:
         last_positions = [
             [round(axis) for axis in pos] for pos in target.last_positions
         ]
@@ -361,7 +355,7 @@ def create_export_video_file(vid_cap):
     return output_video
 
 
-def export_satellite_log(satellite_log: list[tuple[int, Star]]):
+def export_satellite_log(satellite_log: list[Star]):
     """Function to export the satellite log into a file."""
 
     with open(str(PATH_SAT_LOG), "w", encoding="utf-8-sig") as file:
@@ -377,16 +371,16 @@ def export_satellite_log(satellite_log: list[tuple[int, Star]]):
             file=file,
         )
 
-        for star_id, star_info in satellite_log:
+        for star in satellite_log:
             print(
-                f"{star_id};",
-                f"{star_info.last_times_detected};",
-                f"{star_info.lifetime};",
-                f"{star_info.left_lifetime};",
-                f"{star_info.detection_confidence};",
-                f"{star_info.blinking_freq};",
-                f"{star_info.movement_vector};",
-                f"{star_info.last_positions};",
+                f"{star.id};",
+                f"{star.last_times_detected};",
+                f"{star.lifetime};",
+                f"{star.left_lifetime};",
+                f"{star.detection_confidence};",
+                f"{star.blinking_freq};",
+                f"{star.movement_vector};",
+                f"{star.last_positions};",
                 file=file,
             )
 
