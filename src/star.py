@@ -80,6 +80,9 @@ class Star:
     def __eq__(self, other):
         return isinstance(other, Star) and self.__dict__ == other.__dict__
 
+    def __repr__(self):
+        return super().__repr__() + ": " + str(self.__dict__)
+
     def update_info(
         self,
         star_positions: list[tuple[int, int]],
