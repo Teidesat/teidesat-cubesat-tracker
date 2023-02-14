@@ -25,7 +25,7 @@ __deprecated__ = False
 # __license__ = "GPLv3"
 __maintainer__ = "Sergio Tabares Hernández"
 __status__ = "Production"
-__version__ = "0.0.8"
+__version__ = "0.0.9"
 
 from copy import deepcopy
 from itertools import pairwise
@@ -141,14 +141,19 @@ def satellite_detection_test(
         )
 
         # draw_found_stars(show_frame, new_star_positions)
+
         draw_tracked_stars(show_frame, tracked_stars)
-        draw_shooting_stars(show_frame, shooting_stars)
+
         draw_path(show_frame, shooting_stars)
+        draw_shooting_stars(show_frame, shooting_stars)
+        draw_expected_position(show_frame, shooting_stars)
 
         if satellite is not None:
             satellite_log.append(deepcopy(satellite))
-            draw_satellite(show_frame, satellite)
+
             draw_path(show_frame, satellite)
+            draw_satellite(show_frame, satellite)
+            draw_expected_position(show_frame, satellite)
 
         if output_video_to_file:
             output_video.write(show_frame)
@@ -241,8 +246,8 @@ def draw_tracked_stars(
         cv.circle(
             show_frame,
             center=(
-                int(star.last_positions[-1][0]),
-                int(star.last_positions[-1][1]),
+                int(star.last_known_position[0]),
+                int(star.last_known_position[1]),
             ),
             radius=radius,
             color=draw_color,
@@ -268,8 +273,8 @@ def draw_shooting_stars(
         cv.circle(
             show_frame,
             center=(
-                int(star.last_positions[-1][0]),
-                int(star.last_positions[-1][1]),
+                int(star.last_known_position[0]),
+                int(star.last_known_position[1]),
             ),
             radius=radius,
             color=color,
@@ -294,8 +299,8 @@ def draw_satellite(
     cv.circle(
         show_frame,
         center=(
-            int(satellite.last_positions[-1][0]),
-            int(satellite.last_positions[-1][1]),
+            int(satellite.last_known_position[0]),
+            int(satellite.last_known_position[1]),
         ),
         radius=radius,
         color=color,
@@ -305,7 +310,7 @@ def draw_satellite(
 
 def draw_path(
     show_frame,
-    targets,
+    targets: Star | set[Star],
     color: tuple = (200, 200, 0),
     thickness: int = 1,
 ):
@@ -319,7 +324,9 @@ def draw_path(
 
     for target in {targets} if isinstance(targets, Star) else targets:
         last_positions = [
-            [round(axis) for axis in pos] for pos in target.last_positions
+            [round(axis) for axis in pos]
+            for pos in target.last_positions
+            if pos is not None
         ]
         for pos_1, pos_2 in pairwise(last_positions):
             cv.line(
@@ -329,6 +336,34 @@ def draw_path(
                 color=color,
                 thickness=thickness,
             )
+
+
+def draw_expected_position(
+    show_frame,
+    targets: Star | set[Star],
+    radius: int = PX_SENSITIVITY,
+    color: tuple = (200, 200, 0),
+    thickness: int = 1,
+):
+    """
+    Function to draw in the given frame a circle around the expected position of the
+    given objects.
+
+    Note: This function modifies data from 'show_frame' parameter without an explicit
+    return statement for memory usage reduction purposes.
+    """
+
+    for target in {targets} if isinstance(targets, Star) else targets:
+        cv.circle(
+            show_frame,
+            center=(
+                int(target.expected_position[0]),
+                int(target.expected_position[1]),
+            ),
+            radius=radius,
+            color=color,
+            thickness=thickness,
+        )
 
 
 def create_export_video_file(vid_cap):
@@ -367,6 +402,9 @@ def export_satellite_log(satellite_log: list[Star]):
             "detection_confidence;",
             "blinking_freq;",
             "movement_vector;",
+            "frames_since_last_detection;",
+            "last_known_position;",
+            "expected_position;",
             "last_positions;",
             file=file,
         )
@@ -380,6 +418,9 @@ def export_satellite_log(satellite_log: list[Star]):
                 f"{star.detection_confidence};",
                 f"{star.blinking_freq};",
                 f"{star.movement_vector};",
+                f"{star.frames_since_last_detection};",
+                f"{star.last_known_position};",
+                f"{star.expected_position};",
                 f"{star.last_positions};",
                 file=file,
             )

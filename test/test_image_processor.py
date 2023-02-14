@@ -154,7 +154,7 @@ class DataGettersTestCase(unittest.TestCase):
         star_positions = [(11, 16)]
         detected_stars = {
             Star(
-                last_positions=[(10, 15)],
+                last_positions=[(10, 15), None, None],
                 last_times_detected=[1, 0, 0],
                 lifetime=3,
                 left_lifetime=7,
@@ -167,7 +167,7 @@ class DataGettersTestCase(unittest.TestCase):
         expected_positions = []
         expected_stars = {
             Star(
-                last_positions=[(10, 15), (11, 16)],
+                last_positions=[(10, 15), None, None, (11, 16)],
                 last_times_detected=[1, 0, 0, 1],
                 lifetime=4,
                 left_lifetime=default_left_lifetime,
@@ -197,7 +197,7 @@ class DataGettersTestCase(unittest.TestCase):
         star_positions = []
         detected_stars = {
             Star(
-                last_positions=[(11, 16)],
+                last_positions=[(11, 16), (11, 16)],
                 last_times_detected=[1, 1],
                 lifetime=2,
                 left_lifetime=8,
@@ -210,7 +210,7 @@ class DataGettersTestCase(unittest.TestCase):
         expected_positions = []
         expected_stars = {
             Star(
-                last_positions=[(11, 16)],
+                last_positions=[(11, 16), (11, 16), None],
                 last_times_detected=[1, 1, 0],
                 lifetime=3,
                 left_lifetime=7,

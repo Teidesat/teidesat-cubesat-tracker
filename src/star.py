@@ -5,7 +5,6 @@ File with the implementation of the Star class.
 """
 
 from colorsys import hsv_to_rgb
-from itertools import pairwise
 from math import dist
 import random
 from time import time
@@ -46,7 +45,7 @@ class Star:
 
     def __init__(
         self,
-        last_positions: list[tuple[int, int]] = None,
+        last_positions: list[Optional[tuple[int, int]]] = None,
         last_times_detected: list[int] = None,
         lifetime: int = 1,
         left_lifetime: int = DEFAULT_LEFT_LIFETIME,
@@ -54,6 +53,9 @@ class Star:
         detection_confidence: int = 0,
         movement_vector: tuple[float, float] = DEFAULT_VECTOR,
         color: list[int] = None,
+        frames_since_last_detection: int = None,
+        last_known_position: tuple[int, int] = None,
+        expected_position: tuple[int, int] = None,
     ):
         self.id = next(self._id)
 
@@ -73,6 +75,14 @@ class Star:
             if color is None
             else color
         )
+
+        self.frames_since_last_detection = None
+        self.last_known_position = self.get_new_last_known_position(last_known_position)
+
+        if frames_since_last_detection is not None:
+            self.frames_since_last_detection = frames_since_last_detection
+
+        self.expected_position = self.get_new_expected_position(expected_position)
 
     def __hash__(self):
         return self.id
@@ -113,14 +123,18 @@ class Star:
                 detected_stars.remove(self)
                 return
 
+            self.last_positions.append(None)
             self.last_times_detected.append(0)
             self.left_lifetime -= 1
+            self.frames_since_last_detection += 1
 
         else:
             star_positions.remove(new_star_pos)
             self.last_positions.append(new_star_pos)
             self.last_times_detected.append(1)
             self.left_lifetime = default_left_lifetime
+            self.frames_since_last_detection = 1
+            self.last_known_position = new_star_pos
 
         self.last_positions = self.last_positions[-max_history_length:]
         self.last_times_detected = self.last_times_detected[-max_history_length:]
@@ -133,6 +147,7 @@ class Star:
             max_outlier_threshold,
             default_vector,
         )
+        self.expected_position = self.get_new_expected_position()
 
         self.blinking_freq = video_fps * (
             sum(self.last_times_detected) / len(self.last_times_detected)
@@ -157,21 +172,16 @@ class Star:
         if len(star_positions) == 0:
             return None
 
-        expected_star_pos = (
-            round(self.last_positions[-1][0] + self.movement_vector[0]),
-            round(self.last_positions[-1][1] + self.movement_vector[1]),
-        )
-
         try:
-            star_positions.index(expected_star_pos)
-            return expected_star_pos
+            star_positions.index(self.expected_position)
+            return self.expected_position
 
         except ValueError:
             new_star_pos = None
             best_candidate_dist = max_move_distance
 
             for current_star_pos in star_positions:
-                current_pair_dist = dist(expected_star_pos, current_star_pos)
+                current_pair_dist = dist(self.expected_position, current_star_pos)
 
                 if current_pair_dist < best_candidate_dist:
                     best_candidate_dist = current_pair_dist
@@ -192,14 +202,7 @@ class Star:
         if len(self.last_positions) < min_history_length:
             return default_vector
 
-        movement_vectors = [
-            (
-                pos_2[0] - pos_1[0],
-                pos_2[1] - pos_1[1],
-            )
-            for pos_1, pos_2 in pairwise(self.last_positions)
-        ]
-
+        movement_vectors = self.get_individual_movement_vectors()
         mean_vector = get_mean_vector(movement_vectors, default_vector)
 
         if not remove_outliers:
@@ -213,21 +216,104 @@ class Star:
 
         return get_mean_vector(filtered_vectors, default_vector)
 
+    def get_individual_movement_vectors(self) -> list[tuple[float, float]]:
+        """Function to get the individual movement vectors between each pair of its last
+        known positions."""
 
-def get_mean_vector(
-    points: list[tuple[int, int]],
-    default_vector: tuple[float, float] = DEFAULT_VECTOR,
-) -> tuple[float, float]:
-    """Function to calculate the mean vector of the given list of points."""
+        for index, value in enumerate(self.last_positions):
+            if value is not None:
+                i_index = index
+                break
+        else:
+            return []
 
-    num_of_points = len(points)
+        movement_vectors = []
+        while True:
+            j_index = i_index + 1
 
-    if num_of_points != 0:
-        zipped_points = list(zip(*points))
+            while j_index < len(self.last_positions):
+                if self.last_positions[j_index] is None:
+                    j_index += 1
+                else:
+                    break
+            if j_index >= len(self.last_positions):
+                break
+
+            number_of_frames_in_between = j_index - i_index
+            current_movement_vector = (
+                (self.last_positions[j_index][0] - self.last_positions[i_index][0])
+                / number_of_frames_in_between,
+                (self.last_positions[j_index][1] - self.last_positions[i_index][1])
+                / number_of_frames_in_between,
+            )
+            movement_vectors.extend(
+                [current_movement_vector] * number_of_frames_in_between
+            )
+
+            i_index = j_index
+
+        return movement_vectors
+
+    def get_new_expected_position(
+        self,
+        expected_position: tuple[int, int] = None,
+    ) -> tuple[int, int]:
+        """Function to get the expected position of the star."""
 
         return (
-            sum(zipped_points[0]) / num_of_points,
-            sum(zipped_points[1]) / num_of_points,
+            (
+                round(
+                    self.last_known_position[0]
+                    + (self.movement_vector[0] * self.frames_since_last_detection)
+                ),
+                round(
+                    self.last_known_position[1]
+                    + (self.movement_vector[1] * self.frames_since_last_detection)
+                ),
+            )
+            if expected_position is None and self.last_known_position is not None
+            else expected_position
+        )
+
+    def get_new_last_known_position(
+        self,
+        last_known_position: tuple[int, int] = None,
+    ) -> Optional[tuple[int, int]]:
+        """
+        Function to get the last known position of the star.
+
+        Note: This function modifies data from the 'frames_since_last_detection' class
+        attribute for performance reduction purposes.
+        """
+
+        if last_known_position is not None:
+            return last_known_position
+
+        self.frames_since_last_detection = 0
+
+        for pos in reversed(self.last_positions):
+            self.frames_since_last_detection += 1
+
+            if pos is not None:
+                return pos
+
+        return None
+
+
+def get_mean_vector(
+    vectors: list[tuple[float, float]],
+    default_vector: tuple[float, float] = DEFAULT_VECTOR,
+) -> tuple[float, float]:
+    """Function to calculate the mean vector of the given list of vectors."""
+
+    num_of_vectors = len(vectors)
+
+    if num_of_vectors != 0:
+        zipped_points = list(zip(*vectors))
+
+        return (
+            sum(zipped_points[0]) / num_of_vectors,
+            sum(zipped_points[1]) / num_of_vectors,
         )
 
     return default_vector
