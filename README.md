@@ -1,8 +1,8 @@
 # TeideSat Satellite Tracking for the Optical Ground Station
 
-This program implements an api to be able to follow the TeideSat's CubeSat from any Earth's location.
+The TeideSat CubeSat tracking program offers an API that enables real-time monitoring from any location on Earth.
 
-This is made possible by providing the ephemeris of the satellite (the elevation angle, measured from the local horizontal, and the azimuth angle, measured clockwise from the north) obtained *in real time* from the video*camera* frames *using some computer vision algorithms*.
+Utilizing computer vision algorithms, this program provides the satellite’s ephemeris, which includes the elevation angle and azimuth angle. These values, obtained in real-time from video camera frames and TLE coordinates, allow for accurate and up-to-date tracking of the TeideSat CubeSat.
 
 ## Installation:
 1. Clone this repo:

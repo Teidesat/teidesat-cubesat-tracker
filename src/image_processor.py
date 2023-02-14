@@ -62,6 +62,7 @@ def track_stars(
 ) -> None:
     """
     Function to keep track of the detected stars maintaining its data.
+    <br/><br/>
 
     Note: This function modifies data from 'star_positions' and 'detected_stars'
     parameters without an explicit return statement for memory usage reduction purposes.

@@ -57,7 +57,7 @@ class StarClassTestCase(unittest.TestCase):
             "movement_vector": DEFAULT_VECTOR,
             "color": [255, 0, 0],
             "frames_since_last_detection": 0,
-            "last_known_position": None,
+            "last_detected_position": None,
             "expected_position": None,
         }
 
@@ -82,7 +82,7 @@ class StarClassTestCase(unittest.TestCase):
             "movement_vector": (0, 0),
             "color": [0, 0, 100],
             "frames_since_last_detection": 1,
-            "last_known_position": (10, 15),
+            "last_detected_position": (10, 15),
             "expected_position": (10, 15),
         }
 
@@ -227,7 +227,7 @@ class StarClassTestCase(unittest.TestCase):
                 blinking_freq=0,
                 detection_confidence=-8,
                 frames_since_last_detection=4,
-                last_known_position=(10, 15),
+                last_detected_position=(10, 15),
             )
         }
 
@@ -318,18 +318,19 @@ class StarClassTestCase(unittest.TestCase):
         result = star.get_new_star_position(star_positions, max_move_distance=5)
         self.assertEqual(expected_result, result)
 
-    def test_get_movement_vector_1(self):
-        """get_movement_vector can return a default movement vector if not enough points
-        are given."""
+    def test_get_new_movement_vector_1(self):
+        """get_new_movement_vector can return a default movement vector if not enough
+        points are given."""
 
         star = Star(last_positions=[])
         expected_result = (0, 0)
 
-        result = star.get_movement_vector(default_vector=(0, 0))
+        result = star.get_new_movement_vector(default_vector=(0, 0))
         self.assertEqual(expected_result, result)
 
-    def test_get_movement_vector_2(self):
-        """get_movement_vector can get the movement vector from a list of positions."""
+    def test_get_new_movement_vector_2(self):
+        """get_new_movement_vector can get the movement vector from a list of
+        positions."""
 
         star = Star(
             last_positions=[
@@ -342,12 +343,14 @@ class StarClassTestCase(unittest.TestCase):
         )
         expected_result = (1, 0)
 
-        result = star.get_movement_vector(min_history_length=1, remove_outliers=False)
+        result = star.get_new_movement_vector(
+            min_history_length=1, remove_outliers=False
+        )
         self.assertEqual(expected_result, result)
 
-    def test_get_movement_vector_3(self):
-        """get_movement_vector can remove an outlier point and get the movement vector
-        of the remaining positions."""
+    def test_get_new_movement_vector_3(self):
+        """get_new_movement_vector can remove an outlier point and get the movement
+        vector of the remaining positions."""
 
         star = Star(
             last_positions=[
@@ -360,16 +363,16 @@ class StarClassTestCase(unittest.TestCase):
         )
         expected_result = (1, 0)
 
-        result = star.get_movement_vector(
+        result = star.get_new_movement_vector(
             min_history_length=1,
             max_outlier_threshold=1.5,
             remove_outliers=True,
         )
         self.assertEqual(expected_result, result)
 
-    def test_get_movement_vector_4(self):
-        """get_movement_vector can return a default movement vector if all positions are
-        treated as outliers."""
+    def test_get_new_movement_vector_4(self):
+        """get_new_movement_vector can return a default movement vector if all positions
+        are treated as outliers."""
 
         star = Star(
             last_positions=[
@@ -382,7 +385,7 @@ class StarClassTestCase(unittest.TestCase):
         )
         expected_result = (0, 0)
 
-        result = star.get_movement_vector(
+        result = star.get_new_movement_vector(
             min_history_length=1,
             max_outlier_threshold=0.1,
             remove_outliers=True,
@@ -390,8 +393,9 @@ class StarClassTestCase(unittest.TestCase):
         )
         self.assertEqual(expected_result, result)
 
-    def test_get_movement_vector_5(self):
-        """get_movement_vector can get the movement vector even with lost positions."""
+    def test_get_new_movement_vector_5(self):
+        """get_new_movement_vector can get the movement vector even with lost
+        positions."""
 
         star = Star(
             last_positions=[
@@ -408,12 +412,14 @@ class StarClassTestCase(unittest.TestCase):
         )
         expected_result = (1, 0)
 
-        result = star.get_movement_vector(min_history_length=1, remove_outliers=False)
+        result = star.get_new_movement_vector(
+            min_history_length=1, remove_outliers=False
+        )
         self.assertEqual(expected_result, result)
 
     def test_get_individual_movement_vectors_1(self):
         """get_individual_movement_vectors can get the individual movement vectors from
-        two known positions."""
+        two detected positions."""
 
         star = Star(
             last_positions=[
@@ -428,7 +434,7 @@ class StarClassTestCase(unittest.TestCase):
 
     def test_get_individual_movement_vectors_2(self):
         """get_individual_movement_vectors can get the individual movement vectors with
-        one unknown position in between."""
+        one undetected position in between."""
 
         star = Star(
             last_positions=[
@@ -444,7 +450,7 @@ class StarClassTestCase(unittest.TestCase):
 
     def test_get_individual_movement_vectors_3(self):
         """get_individual_movement_vectors can return an empty list if there are not
-        enough known positions."""
+        enough detected positions."""
 
         star = Star(
             last_positions=[
@@ -458,7 +464,7 @@ class StarClassTestCase(unittest.TestCase):
 
     def test_get_individual_movement_vectors_4(self):
         """get_individual_movement_vectors can return an empty list if there are not
-        enough known positions."""
+        enough detected positions."""
 
         star = Star(
             last_positions=[
@@ -472,7 +478,7 @@ class StarClassTestCase(unittest.TestCase):
 
     def test_get_individual_movement_vectors_5(self):
         """get_individual_movement_vectors can return an empty list if there are not
-        enough known positions."""
+        enough detected positions."""
 
         star = Star(
             last_positions=[
@@ -492,7 +498,7 @@ class StarClassTestCase(unittest.TestCase):
 
         star = Star(
             movement_vector=(0, 0),
-            last_known_position=(10, 15),
+            last_detected_position=(10, 15),
             frames_since_last_detection=1,
         )
         expected_result = (10, 15)
@@ -504,7 +510,7 @@ class StarClassTestCase(unittest.TestCase):
 
         star = Star(
             movement_vector=(1, 1),
-            last_known_position=(10, 15),
+            last_detected_position=(10, 15),
             frames_since_last_detection=1,
         )
         expected_result = (11, 16)
@@ -516,53 +522,54 @@ class StarClassTestCase(unittest.TestCase):
 
         star = Star(
             movement_vector=(1, 1),
-            last_known_position=(10, 15),
+            last_detected_position=(10, 15),
             frames_since_last_detection=3,
         )
         expected_result = (13, 18)
 
         self.assertEqual(expected_result, star.expected_position)
 
-    def test_last_known_position_1(self):
-        """last_known_position can return the last known position of the star."""
+    def test_last_detected_position_1(self):
+        """last_detected_position can return the last detected position of the star."""
 
         star = Star(
             last_positions=[(10, 15)],
         )
         expected_result = (10, 15)
 
-        self.assertEqual(expected_result, star.last_known_position)
+        self.assertEqual(expected_result, star.last_detected_position)
 
-    def test_last_known_position_2(self):
-        """last_known_position can return the last known position of the star
-        ignoring the not known ones."""
+    def test_last_detected_position_2(self):
+        """last_detected_position can return the last detected position of the star
+        ignoring the not detected ones."""
 
         star = Star(
             last_positions=[(10, 15), None, None],
         )
         expected_result = (10, 15)
 
-        self.assertEqual(expected_result, star.last_known_position)
+        self.assertEqual(expected_result, star.last_detected_position)
 
-    def test_last_known_position_3(self):
-        """last_known_position can return None if the star has no position."""
+    def test_last_detected_position_3(self):
+        """last_detected_position can return None if the star has no position."""
 
         star = Star(
             last_positions=[],
         )
         expected_result = None
 
-        self.assertEqual(expected_result, star.last_known_position)
+        self.assertEqual(expected_result, star.last_detected_position)
 
-    def test_last_known_position_4(self):
-        """last_known_position can return None if the star has no known position."""
+    def test_last_detected_position_4(self):
+        """last_detected_position can return None if the star has no detected
+        positions."""
 
         star = Star(
             last_positions=[None, None, None],
         )
         expected_result = None
 
-        self.assertEqual(expected_result, star.last_known_position)
+        self.assertEqual(expected_result, star.last_detected_position)
 
     def test_get_mean_vect_1(self):
         """get_mean_vect can return a default vector if not enough vectors are given."""

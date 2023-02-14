@@ -200,6 +200,7 @@ def draw_found_stars(
 ):
     """
     Function to draw in the given frame a circle around every found star.
+    <br/><br/>
 
     Note: This function modifies data from 'show_frame' parameter without an explicit
     return statement for memory usage reduction purposes.
@@ -228,6 +229,7 @@ def draw_tracked_stars(
 ):
     """
     Function to draw in the given frame a circle around every tracked star.
+    <br/><br/>
 
     Note: This function modifies data from 'show_frame' parameter without an explicit
     return statement for memory usage reduction purposes.
@@ -246,8 +248,8 @@ def draw_tracked_stars(
         cv.circle(
             show_frame,
             center=(
-                int(star.last_known_position[0]),
-                int(star.last_known_position[1]),
+                int(star.last_detected_position[0]),
+                int(star.last_detected_position[1]),
             ),
             radius=radius,
             color=draw_color,
@@ -264,6 +266,7 @@ def draw_shooting_stars(
 ):
     """
     Function to draw in the given frame a circle around every shooting star.
+    <br/><br/>
 
     Note: This function modifies data from 'show_frame' parameter without an explicit
     return statement for memory usage reduction purposes.
@@ -273,8 +276,8 @@ def draw_shooting_stars(
         cv.circle(
             show_frame,
             center=(
-                int(star.last_known_position[0]),
-                int(star.last_known_position[1]),
+                int(star.last_detected_position[0]),
+                int(star.last_detected_position[1]),
             ),
             radius=radius,
             color=color,
@@ -290,7 +293,8 @@ def draw_satellite(
     thickness: int = 2,
 ):
     """
-    Function to draw in the given frame a circle around the satellite detected.
+    Function to draw in the given frame a circle around the detected satellite.
+    <br/><br/>
 
     Note: This function modifies data from 'show_frame' parameter without an explicit
     return statement for memory usage reduction purposes.
@@ -299,8 +303,8 @@ def draw_satellite(
     cv.circle(
         show_frame,
         center=(
-            int(satellite.last_known_position[0]),
-            int(satellite.last_known_position[1]),
+            int(satellite.last_detected_position[0]),
+            int(satellite.last_detected_position[1]),
         ),
         radius=radius,
         color=color,
@@ -315,8 +319,9 @@ def draw_path(
     thickness: int = 1,
 ):
     """
-    Function to draw in the given frame a line through the last detected
-    positions of the given objects.
+    Function to draw in the given frame a line through the last detected positions of
+    the given objects.
+    <br/><br/>
 
     Note: This function modifies data from 'show_frame' parameter without an explicit
     return statement for memory usage reduction purposes.
@@ -348,6 +353,7 @@ def draw_expected_position(
     """
     Function to draw in the given frame a circle around the expected position of the
     given objects.
+    <br/><br/>
 
     Note: This function modifies data from 'show_frame' parameter without an explicit
     return statement for memory usage reduction purposes.
@@ -403,7 +409,7 @@ def export_satellite_log(satellite_log: list[Star]):
             "blinking_freq;",
             "movement_vector;",
             "frames_since_last_detection;",
-            "last_known_position;",
+            "last_detected_position;",
             "expected_position;",
             "last_positions;",
             file=file,
@@ -419,7 +425,7 @@ def export_satellite_log(satellite_log: list[Star]):
                 f"{star.blinking_freq};",
                 f"{star.movement_vector};",
                 f"{star.frames_since_last_detection};",
-                f"{star.last_known_position};",
+                f"{star.last_detected_position};",
                 f"{star.expected_position};",
                 f"{star.last_positions};",
                 file=file,

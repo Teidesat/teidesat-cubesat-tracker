@@ -27,7 +27,7 @@ random.seed(time())
 
 
 def id_generator() -> Generator:
-    """Function to generate a new star identifier."""
+    """Function to generate unique star identifiers."""
 
     next_id = 0
 
@@ -54,7 +54,7 @@ class Star:
         movement_vector: tuple[float, float] = DEFAULT_VECTOR,
         color: list[int] = None,
         frames_since_last_detection: int = None,
-        last_known_position: tuple[int, int] = None,
+        last_detected_position: tuple[int, int] = None,
         expected_position: tuple[int, int] = None,
     ):
         self.id = next(self._id)
@@ -77,20 +77,25 @@ class Star:
         )
 
         self.frames_since_last_detection = None
-        self.last_known_position = self.get_new_last_known_position(last_known_position)
+        self.last_detected_position = self.get_new_last_detected_position(
+            last_detected_position
+        )
 
         if frames_since_last_detection is not None:
             self.frames_since_last_detection = frames_since_last_detection
 
         self.expected_position = self.get_new_expected_position(expected_position)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
+        """Function to set the star's id as the object's hash value."""
         return self.id
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
+        """Function to compare two stars by their attributes."""
         return isinstance(other, Star) and self.__dict__ == other.__dict__
 
-    def __repr__(self):
+    def __repr__(self) -> str:
+        """Function to add the star attributes to the default representation."""
         return super().__repr__() + ": " + str(self.__dict__)
 
     def update_info(
@@ -110,6 +115,7 @@ class Star:
     ) -> None:
         """
         Function to update the star's information.
+        <br/><br/>
 
         Note: This function modifies data from 'star_positions' and 'detected_stars'
         parameters without an explicit return statement for memory usage reduction
@@ -134,14 +140,14 @@ class Star:
             self.last_times_detected.append(1)
             self.left_lifetime = default_left_lifetime
             self.frames_since_last_detection = 1
-            self.last_known_position = new_star_pos
+            self.last_detected_position = new_star_pos
 
         self.last_positions = self.last_positions[-max_history_length:]
         self.last_times_detected = self.last_times_detected[-max_history_length:]
 
         self.lifetime += 1
 
-        self.movement_vector = self.get_movement_vector(
+        self.movement_vector = self.get_new_movement_vector(
             min_history_length,
             remove_outliers,
             max_outlier_threshold,
@@ -167,7 +173,13 @@ class Star:
         star_positions: list[tuple[int, int]],
         max_move_distance: float = MAX_MOVE_DISTANCE,
     ) -> Optional[tuple[int, int]]:
-        """Function to get the new position of the star."""
+        """
+        Function to get the new position of the star.
+        <br/><br/>
+
+        Note: If the prediction is not pixel perfect then the closest star position is
+        returned.
+        """
 
         if len(star_positions) == 0:
             return None
@@ -189,14 +201,14 @@ class Star:
 
             return new_star_pos
 
-    def get_movement_vector(
+    def get_new_movement_vector(
         self,
         min_history_length: int = MIN_HISTORY_LENGTH,
         remove_outliers: bool = REMOVE_OUTLIERS,
         max_outlier_threshold: float = MAX_OUTLIER_THRESHOLD,
         default_vector: tuple[float, float] = DEFAULT_VECTOR,
     ) -> tuple[float, float]:
-        """Function to calculate the star movement vector based on it's last
+        """Function to calculate the star movement vector based on its last detected
         positions."""
 
         if len(self.last_positions) < min_history_length:
@@ -218,7 +230,7 @@ class Star:
 
     def get_individual_movement_vectors(self) -> list[tuple[float, float]]:
         """Function to get the individual movement vectors between each pair of its last
-        known positions."""
+        detected positions."""
 
         for index, value in enumerate(self.last_positions):
             if value is not None:
@@ -258,36 +270,38 @@ class Star:
         self,
         expected_position: tuple[int, int] = None,
     ) -> tuple[int, int]:
-        """Function to get the expected position of the star."""
+        """Function to calculate the expected position of the star."""
 
         return (
             (
                 round(
-                    self.last_known_position[0]
+                    self.last_detected_position[0]
                     + (self.movement_vector[0] * self.frames_since_last_detection)
                 ),
                 round(
-                    self.last_known_position[1]
+                    self.last_detected_position[1]
                     + (self.movement_vector[1] * self.frames_since_last_detection)
                 ),
             )
-            if expected_position is None and self.last_known_position is not None
+            if expected_position is None and self.last_detected_position is not None
             else expected_position
         )
 
-    def get_new_last_known_position(
+    def get_new_last_detected_position(
         self,
-        last_known_position: tuple[int, int] = None,
+        last_detected_position: tuple[int, int] = None,
     ) -> Optional[tuple[int, int]]:
         """
-        Function to get the last known position of the star.
+        Function to calculate the last detected position of the star and the number of
+        frames since the last detection.
+        <br/><br/>
 
         Note: This function modifies data from the 'frames_since_last_detection' class
         attribute for performance reduction purposes.
         """
 
-        if last_known_position is not None:
-            return last_known_position
+        if last_detected_position is not None:
+            return last_detected_position
 
         self.frames_since_last_detection = 0
 
