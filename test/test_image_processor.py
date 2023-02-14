@@ -23,7 +23,7 @@ from src.image_processor import (
 from src.star import Star
 
 
-class DataGettersTestCase(unittest.TestCase):
+class ImageProcessorTestCase(unittest.TestCase):
     """Class to test the image_processor script."""
 
     @classmethod

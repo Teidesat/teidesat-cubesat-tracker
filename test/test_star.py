@@ -16,16 +16,28 @@ from src.star import (
     VIDEO_FPS,
     DEFAULT_VECTOR,
     Star,
+    id_generator,
     get_mean_vector,
 )
 
 
-class DataGettersTestCase(unittest.TestCase):
+class StarClassTestCase(unittest.TestCase):
     """Class to test the image_processor script."""
 
     @classmethod
     def setUpClass(cls):
         cls.star_detector = cv.FastFeatureDetector_create(threshold=50)
+
+    def test_id_generator(self):
+        """The id generator gives a different integer number each time."""
+
+        id_gen = id_generator()
+
+        number_of_ids = 1000
+        unique_ids = len({next(id_gen) for _ in range(number_of_ids)})
+        expected_unique_ids = number_of_ids
+
+        self.assertEqual(expected_unique_ids, unique_ids)
 
     def test_default_star(self):
         """A new default star can be created."""
