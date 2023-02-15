@@ -10,7 +10,7 @@ TeideSat Satellite Tracking for the Optical Ground Station
 #     This program is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 # PARTICULAR PURPOSE. See the GNU General Public License for more details. You should
-# have received a copy of the GNU General Public License along with this program. If 
+# have received a copy of the GNU General Public License along with this program. If
 # not, see <https://www.gnu.org/licenses/>.
 """  # ToDo: complete module docstring
 
@@ -140,20 +140,16 @@ def satellite_detection_test(
             frame.copy() if rgb_image else cv.cvtColor(frame, cv.COLOR_GRAY2RGB)
         )
 
-        # draw_found_stars(show_frame, new_star_positions)
-
-        draw_tracked_stars(show_frame, tracked_stars)
-
-        draw_path(show_frame, shooting_stars)
-        draw_shooting_stars(show_frame, shooting_stars)
-        draw_expected_position(show_frame, shooting_stars)
+        draw_in_frame(
+            show_frame,
+            new_star_positions,
+            tracked_stars,
+            shooting_stars,
+            satellite,
+        )
 
         if satellite is not None:
             satellite_log.append(deepcopy(satellite))
-
-            draw_path(show_frame, satellite)
-            draw_satellite(show_frame, satellite)
-            draw_expected_position(show_frame, satellite)
 
         if output_video_to_file:
             output_video.write(show_frame)
@@ -191,123 +187,77 @@ def print_time_statistics(
     print()
 
 
-def draw_found_stars(
+def draw_in_frame(
     show_frame,
-    found_stars: list[tuple[int, int]],
-    radius: int = PX_SENSITIVITY,
-    color: tuple = (0, 0, 100),
-    thickness: int = 2,
+    new_star_positions: list[tuple[int, int]] = None,
+    tracked_stars: set[Star] = None,
+    shooting_stars: set[Star] = None,
+    satellite: Star = None,
 ):
     """
-    Function to draw in the given frame a circle around every found star.
+    Function to draw information about the detected elements in the image frame.
     <br/><br/>
 
     Note: This function modifies data from 'show_frame' parameter without an explicit
     return statement for memory usage reduction purposes.
     """
 
-    for star in found_stars:
-        cv.circle(
-            show_frame,
-            center=(
-                int(star[0]),
-                int(star[1]),
-            ),
-            radius=radius,
-            color=color,
-            thickness=thickness,
+    # for star in new_star_positions if new_star_positions is not None else []:
+    #     draw_position(show_frame, star)
+
+    for star in tracked_stars if tracked_stars is not None else []:
+        draw_position(show_frame, star.last_detected_position)
+
+    for star in shooting_stars if shooting_stars is not None else []:
+        draw_path(show_frame, star)
+        draw_position(show_frame, star.last_detected_position, color=(0, 200, 200))
+        draw_position(
+            show_frame, star.expected_position, color=(200, 200, 0), thickness=1
+        )
+
+    if satellite is not None:
+        draw_path(show_frame, satellite)
+        draw_position(show_frame, satellite.last_detected_position, color=(0, 200, 0))
+        draw_position(
+            show_frame, satellite.expected_position, color=(200, 200, 0), thickness=1
         )
 
 
-def draw_tracked_stars(
+def draw_position(
     show_frame,
-    tracked_stars: set[Star],
+    target: tuple[int, int],
     radius: int = PX_SENSITIVITY,
     color: tuple = None,
-    thickness: int = 2,
     colorized_tracked_stars: bool = COLORIZED_TRACKED_STARS,
+    thickness: int = 2,
 ):
     """
-    Function to draw in the given frame a circle around every tracked star.
+    Function to draw in the given frame a circle around the given position.
     <br/><br/>
 
     Note: This function modifies data from 'show_frame' parameter without an explicit
     return statement for memory usage reduction purposes.
+    <br/><br/>
+
+    Note: colorized_tracked_stars parameter is ignored if color parameter is not None.
     """
 
-    for star in tracked_stars:
-
-        if color is None:
-            if colorized_tracked_stars:
-                draw_color = star.color
-            else:
-                draw_color = (0, 0, 100)
+    if color is None:
+        if colorized_tracked_stars and isinstance(target, Star):
+            draw_color = target.color
         else:
-            draw_color = color
-
-        cv.circle(
-            show_frame,
-            center=(
-                int(star.last_detected_position[0]),
-                int(star.last_detected_position[1]),
-            ),
-            radius=radius,
-            color=draw_color,
-            thickness=thickness,
-        )
-
-
-def draw_shooting_stars(
-    show_frame,
-    shooting_stars: set[Star],
-    radius: int = PX_SENSITIVITY,
-    color: tuple = (0, 200, 200),
-    thickness: int = 2,
-):
-    """
-    Function to draw in the given frame a circle around every shooting star.
-    <br/><br/>
-
-    Note: This function modifies data from 'show_frame' parameter without an explicit
-    return statement for memory usage reduction purposes.
-    """
-
-    for star in shooting_stars:
-        cv.circle(
-            show_frame,
-            center=(
-                int(star.last_detected_position[0]),
-                int(star.last_detected_position[1]),
-            ),
-            radius=radius,
-            color=color,
-            thickness=thickness,
-        )
-
-
-def draw_satellite(
-    show_frame,
-    satellite: Star,
-    radius: int = PX_SENSITIVITY,
-    color: tuple = (0, 200, 0),
-    thickness: int = 2,
-):
-    """
-    Function to draw in the given frame a circle around the detected satellite.
-    <br/><br/>
-
-    Note: This function modifies data from 'show_frame' parameter without an explicit
-    return statement for memory usage reduction purposes.
-    """
+            draw_color = (0, 0, 100)
+    else:
+        draw_color = color
 
     cv.circle(
         show_frame,
         center=(
-            int(satellite.last_detected_position[0]),
-            int(satellite.last_detected_position[1]),
+            int(target[0]),
+            int(target[1]),
         ),
         radius=radius,
-        color=color,
+        color=draw_color,
         thickness=thickness,
     )
 
@@ -341,35 +291,6 @@ def draw_path(
                 color=color,
                 thickness=thickness,
             )
-
-
-def draw_expected_position(
-    show_frame,
-    targets: Star | set[Star],
-    radius: int = PX_SENSITIVITY,
-    color: tuple = (200, 200, 0),
-    thickness: int = 1,
-):
-    """
-    Function to draw in the given frame a circle around the expected position of the
-    given objects.
-    <br/><br/>
-
-    Note: This function modifies data from 'show_frame' parameter without an explicit
-    return statement for memory usage reduction purposes.
-    """
-
-    for target in {targets} if isinstance(targets, Star) else targets:
-        cv.circle(
-            show_frame,
-            center=(
-                int(target.expected_position[0]),
-                int(target.expected_position[1]),
-            ),
-            radius=radius,
-            color=color,
-            thickness=thickness,
-        )
 
 
 def create_export_video_file(vid_cap):
