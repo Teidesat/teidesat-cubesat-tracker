@@ -17,6 +17,8 @@ Utilizing computer vision algorithms, this program provides the satellite’s ep
    ```
 
 ## Usage:
+
+### Run the program:
 ```
 $ python3 ./main.py
 ```
@@ -24,4 +26,13 @@ or
 ```
 $ chmod +x ./main.py
 $ ./main.py
+```
+
+### Run the tests:
+```
+$ python3 -m unittest discover -s test
+```
+or
+```
+coverage run --branch --omit=config*,*init*,test* -m unittest && echo '' && coverage report -m && coverage erase
 ```
