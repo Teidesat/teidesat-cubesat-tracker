@@ -54,8 +54,10 @@ from constants import (
     VIDEO_FROM_CAMERA,
     SHOW_VIDEO_RESULT,
     COLORIZED_TRACKED_STARS,
-    OUTPUT_VIDEO_TO_FILE,
-    PATH_OUTPUT_VIDEO,
+    OUTPUT_RAW_VIDEO_TO_FILE,
+    OUTPUT_PROCESSED_VIDEO_TO_FILE,
+    PATH_OUTPUT_RAW_VIDEO,
+    PATH_OUTPUT_PROCESSED_VIDEO,
 )
 
 
@@ -86,7 +88,8 @@ def satellite_detection_test(
     movement_threshold: float = MOVEMENT_THRESHOLD,
     rgb_image: bool = RGB_IMAGE,
     show_video_result: bool = SHOW_VIDEO_RESULT,
-    output_video_to_file: bool = OUTPUT_VIDEO_TO_FILE,
+    output_raw_video_to_file: bool = OUTPUT_RAW_VIDEO_TO_FILE,
+    output_processed_video_to_file: bool = OUTPUT_PROCESSED_VIDEO_TO_FILE,
 ):
     """Function to detect and track the satellite."""
 
@@ -109,7 +112,17 @@ def satellite_detection_test(
     processed_frames = 0
     start_time = perf_counter()
 
-    output_video = create_export_video_file(vid_cap) if output_video_to_file else None
+    output_raw_video = (
+        create_export_video_file(vid_cap, str(PATH_OUTPUT_RAW_VIDEO))
+        if output_raw_video_to_file
+        else None
+    )
+
+    output_processed_video = (
+        create_export_video_file(vid_cap, str(PATH_OUTPUT_PROCESSED_VIDEO))
+        if output_processed_video_to_file
+        else None
+    )
 
     if show_video_result:
         cv.namedWindow("Satellite detection", cv.WINDOW_NORMAL)
@@ -151,8 +164,11 @@ def satellite_detection_test(
         if satellite is not None:
             satellite_log.append(deepcopy(satellite))
 
-        if output_video_to_file:
-            output_video.write(show_frame)
+        if output_raw_video is not None:
+            output_raw_video.write(frame)
+
+        if output_processed_video is not None:
+            output_processed_video.write(show_frame)
 
         if show_video_result:
             cv.imshow("Satellite detection", show_frame)
@@ -167,8 +183,11 @@ def satellite_detection_test(
     print_time_statistics(processed_frames, start_time)
     export_satellite_log(satellite_log)
 
-    if output_video_to_file:
-        print(f"Video saved on '{str(PATH_OUTPUT_VIDEO)}'")
+    if output_raw_video is not None:
+        print(f"Raw video saved on '{str(PATH_OUTPUT_RAW_VIDEO)}'")
+
+    if output_processed_video is not None:
+        print(f"Processed video saved on '{str(PATH_OUTPUT_PROCESSED_VIDEO)}'")
 
     cv.destroyAllWindows()
 
@@ -293,7 +312,7 @@ def draw_path(
             )
 
 
-def create_export_video_file(vid_cap):
+def create_export_video_file(vid_cap, output_video_path: str):
     """Function to create a video file to export the processed frames."""
 
     width = int(vid_cap.get(cv.CAP_PROP_FRAME_WIDTH))
@@ -305,7 +324,7 @@ def create_export_video_file(vid_cap):
     print("Number of frames:", frame_count)
 
     output_video = cv.VideoWriter(
-        str(PATH_OUTPUT_VIDEO),
+        output_video_path,
         cv.VideoWriter_fourcc(*"mp4v"),
         fps,
         (width, height),
