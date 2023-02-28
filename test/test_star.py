@@ -150,6 +150,32 @@ class StarClassTestCase(unittest.TestCase):
 
         self.assertNotEqual(star_1, star_2)
 
+    def test_repr(self):
+        """__repr__ can return the string representation of a star."""
+
+        star = Star()
+        expected_result = (
+            f"<{star.__class__.__module__}.{star.__class__.__name__}"
+            + f" object at {hex(id(star))}>: "
+            + str(
+                {
+                    "id": 0,
+                    "last_positions": [],
+                    "last_times_detected": [],
+                    "lifetime": 1,
+                    "left_lifetime": DEFAULT_LEFT_LIFETIME,
+                    "blinking_freq": VIDEO_FPS,
+                    "detection_confidence": 0,
+                    "movement_vector": DEFAULT_VECTOR,
+                    "color": [255, 0.0, 0.0],
+                    "frames_since_last_detection": 0,
+                    "last_detected_position": None,
+                    "expected_position": None,
+                }
+            )
+        )
+        self.assertEqual(expected_result, star.__repr__())
+
     def test_update_info_1(self):
         """update_info can add the new star position and update the star information
         accordingly."""
