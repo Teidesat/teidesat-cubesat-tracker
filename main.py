@@ -33,6 +33,7 @@ import sys
 from time import perf_counter
 
 import cv2 as cv
+from imutils import translate
 
 from src.image_processor import (
     detect_stars,
@@ -54,6 +55,7 @@ from constants import (
     VIDEO_FROM_CAMERA,
     SHOW_VIDEO_RESULT,
     COLORIZED_TRACKED_STARS,
+    SIMULATE_TRACKING,
     OUTPUT_RAW_VIDEO_TO_FILE,
     OUTPUT_PROCESSED_VIDEO_TO_FILE,
     PATH_OUTPUT_RAW_VIDEO,
@@ -95,6 +97,13 @@ def satellite_detection_test(
 
     # if VIDEO_FROM_CAMERA this could not work
     video_fps = vid_cap.get(cv.CAP_PROP_FPS)
+
+    if SIMULATE_TRACKING:
+        frame_width = int(vid_cap.get(cv.CAP_PROP_FRAME_WIDTH))
+        frame_height = int(vid_cap.get(cv.CAP_PROP_FRAME_HEIGHT))
+        frame_center = (frame_width / 2, frame_height / 2)
+    else:
+        frame_center = None
 
     star_detector = cv.FastFeatureDetector_create(threshold=star_detector_threshold)
 
@@ -163,6 +172,11 @@ def satellite_detection_test(
 
         if satellite is not None:
             satellite_log.append(deepcopy(satellite))
+
+            if frame_center is not None:
+                show_frame = tracking_phase_video_simulation(
+                    satellite, show_frame, frame_center
+                )
 
         if output_raw_video is not None:
             output_raw_video.write(frame)
@@ -310,6 +324,16 @@ def draw_path(
                 color=color,
                 thickness=thickness,
             )
+
+
+def tracking_phase_video_simulation(satellite, show_frame, frame_center):
+
+    translation_vector = [
+        frame_center[0] - satellite.expected_position[0],
+        frame_center[1] - satellite.expected_position[1],
+    ]
+
+    return translate(show_frame, translation_vector[0], translation_vector[1])
 
 
 def create_export_video_file(vid_cap, output_video_path: str):
