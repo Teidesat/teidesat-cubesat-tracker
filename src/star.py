@@ -21,6 +21,7 @@ from constants import (
     MAX_OUTLIER_THRESHOLD,
     MAX_MOVE_DISTANCE,
     FREQUENCY_THRESHOLD,
+    MOVEMENT_VECTOR_COMPUTATION_METHOD,
 )
 
 random.seed(time())
@@ -112,6 +113,7 @@ class Star:
         max_outlier_threshold: float = MAX_OUTLIER_THRESHOLD,
         default_vector: tuple[float, float] = DEFAULT_VECTOR,
         frequency_threshold: float = FREQUENCY_THRESHOLD,
+        movement_vector_computation_method: str = MOVEMENT_VECTOR_COMPUTATION_METHOD,
     ) -> None:
         """
         Function to update the star's information.
@@ -152,6 +154,7 @@ class Star:
             remove_outliers,
             max_outlier_threshold,
             default_vector,
+            movement_vector_computation_method,
         )
         self.expected_position = self.get_new_expected_position()
 
@@ -207,6 +210,7 @@ class Star:
         remove_outliers: bool = REMOVE_OUTLIERS,
         max_outlier_threshold: float = MAX_OUTLIER_THRESHOLD,
         default_vector: tuple[float, float] = DEFAULT_VECTOR,
+        movement_vector_computation_method: str = MOVEMENT_VECTOR_COMPUTATION_METHOD,
     ) -> tuple[float, float]:
         """Function to calculate the star movement vector based on its last detected
         positions."""
@@ -215,7 +219,11 @@ class Star:
             return default_vector
 
         movement_vectors = self.get_individual_movement_vectors()
-        mean_vector = get_mean_vector(movement_vectors, default_vector)
+        mean_vector = get_average_vector(
+            movement_vectors,
+            default_vector,
+            movement_vector_computation_method,
+        )
 
         if not remove_outliers:
             return mean_vector
@@ -226,7 +234,11 @@ class Star:
             if dist(mean_vector, current_vector) < max_outlier_threshold
         ]
 
-        return get_mean_vector(filtered_vectors, default_vector)
+        return get_average_vector(
+            filtered_vectors,
+            default_vector,
+            movement_vector_computation_method,
+        )
 
     def get_individual_movement_vectors(self) -> list[tuple[float, float]]:
         """Function to get the individual movement vectors between each pair of its last
@@ -314,20 +326,83 @@ class Star:
         return None
 
 
-def get_mean_vector(
+# ToDo: extract this to another file?
+# ToDo: test the different methods and compare accuracy and performance
+def get_average_vector(
     vectors: list[tuple[float, float]],
     default_vector: tuple[float, float] = DEFAULT_VECTOR,
+    computation_method: str = MOVEMENT_VECTOR_COMPUTATION_METHOD,
 ) -> tuple[float, float]:
-    """Function to calculate the mean vector of the given list of vectors."""
+    """
+    Function to calculate the average (or central tendency) vector from the given list.
+    <br/><br/>
+
+    The 'computation_method' parameter can be used to select how to calculate the
+    resulting vector.
+    <br/>
+    - mean: arithmetic mean <br/>
+    - median: middle value after sorting <br/>
+    - mode: most common value <br/>
+    <br/>
+
+    If the given list of vectors is empty then the 'default_vector' is returned.
+    """
 
     num_of_vectors = len(vectors)
 
     if num_of_vectors != 0:
         zipped_points = list(zip(*vectors))
 
-        return (
-            sum(zipped_points[0]) / num_of_vectors,
-            sum(zipped_points[1]) / num_of_vectors,
-        )
+        if computation_method == "mean":
+            # return the mean of each axis
+            return (
+                sum(zipped_points[0]) / num_of_vectors,
+                sum(zipped_points[1]) / num_of_vectors,
+            )
+
+        elif computation_method == "median":
+            # return the median of each axis
+            center_index = num_of_vectors // 2
+            sorted_zipped_points = [
+                sorted(zipped_points[0]),
+                sorted(zipped_points[1]),
+            ]
+
+            if num_of_vectors % 2 == 0:
+                return (
+                    (
+                        (
+                            (sorted_zipped_points[0][center_index - 1])
+                            + (sorted_zipped_points[0][center_index])
+                        )
+                        / 2
+                    ),
+                    (
+                        (
+                            (sorted_zipped_points[1][center_index - 1])
+                            + (sorted_zipped_points[1][center_index])
+                        )
+                        / 2
+                    ),
+                )
+
+            else:
+                return (
+                    sorted_zipped_points[0][center_index],
+                    sorted_zipped_points[1][center_index],
+                )
+
+        elif computation_method == "mode":
+            # return the mode of each axis
+            return (
+                max(set(zipped_points[0]), key=zipped_points[0].count),
+                max(set(zipped_points[1]), key=zipped_points[1].count),
+            )
+
+        else:
+            raise ValueError(
+                "Error: Invalid computation method, "
+                + "the available values are: 'mean', 'median' and 'mode'"
+            )
 
     return default_vector

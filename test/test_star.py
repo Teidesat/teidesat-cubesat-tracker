@@ -17,7 +17,7 @@ from src.star import (
     DEFAULT_VECTOR,
     Star,
     id_generator,
-    get_mean_vector,
+    get_average_vector,
 )
 
 
@@ -370,7 +370,9 @@ class StarClassTestCase(unittest.TestCase):
         expected_result = (1, 0)
 
         result = star.get_new_movement_vector(
-            min_history_length=1, remove_outliers=False
+            min_history_length=1,
+            remove_outliers=False,
+            movement_vector_computation_method="mean",
         )
         self.assertEqual(expected_result, result)
 
@@ -393,6 +395,7 @@ class StarClassTestCase(unittest.TestCase):
             min_history_length=1,
             max_outlier_threshold=1.5,
             remove_outliers=True,
+            movement_vector_computation_method="mean",
         )
         self.assertEqual(expected_result, result)
 
@@ -416,6 +419,7 @@ class StarClassTestCase(unittest.TestCase):
             max_outlier_threshold=0.1,
             remove_outliers=True,
             default_vector=(0, 0),
+            movement_vector_computation_method="mean",
         )
         self.assertEqual(expected_result, result)
 
@@ -439,7 +443,9 @@ class StarClassTestCase(unittest.TestCase):
         expected_result = (1, 0)
 
         result = star.get_new_movement_vector(
-            min_history_length=1, remove_outliers=False
+            min_history_length=1,
+            remove_outliers=False,
+            movement_vector_computation_method="mean",
         )
         self.assertEqual(expected_result, result)
 
@@ -597,28 +603,85 @@ class StarClassTestCase(unittest.TestCase):
 
         self.assertEqual(expected_result, star.last_detected_position)
 
-    def test_get_mean_vect_1(self):
-        """get_mean_vect can return a default vector if not enough vectors are given."""
+    def test_get_average_vect_1(self):
+        """get_average_vect can return the default vector if an empty list is given."""
 
         vectors = []
         expected_result = (0, 0)
 
-        result = get_mean_vector(vectors, default_vector=(0, 0))
+        result = get_average_vector(vectors, default_vector=(0, 0))
         self.assertEqual(expected_result, result)
 
-    def test_get_mean_vect_2(self):
-        """get_mean_vect can get the mean vector from a list of vectors."""
+    def test_get_average_vect_2(self):
+        """get_average_vect can get the mean vector from a list of vectors."""
 
         vectors = [
-            (1, 4),
-            (2, 4),
-            (3, 4),
-            (4, 4),
-            (5, 4),
+            (3.2, 7.1),
+            (2.1, 5.9),
+            (1.8, 6.2),
+            (2.0, 5.8),
+            (1.8, 6.5),
+            (2.3, 6.8),
+            (2.5, 5.9),
         ]
-        expected_result = (3, 4)
+        expected_result = (2.24, 6.31)
 
-        result = get_mean_vector(vectors, default_vector=(0, 0))
+        result = get_average_vector(vectors, computation_method="mean")
+        self.assertAlmostEqual(expected_result[0], result[0], places=2)
+
+    def test_get_average_vect_3(self):
+        """get_average_vect can get the median vector from a list of vectors containing
+        an odd number of items."""
+
+        vectors = [
+            (3.2, 7.1),
+            (2.1, 5.9),
+            (1.8, 6.2),
+            (2.0, 5.8),
+            (1.8, 6.5),
+            (2.3, 6.8),
+            (2.5, 5.9),
+        ]
+        expected_result = (2.1, 6.2)
+
+        result = get_average_vector(vectors, computation_method="median")
+        self.assertEqual(expected_result, result)
+
+    def test_get_average_vect_4(self):
+        """get_average_vect can get the median vector from a list of vectors containing
+        an even number of items."""
+
+        vectors = [
+            (3.2, 7.1),
+            (2.1, 5.9),
+            (1.8, 6.2),
+            (2.0, 5.8),
+            (1.8, 6.5),
+            (2.3, 6.8),
+            (2.5, 5.9),
+            (2.9, 6.3),
+        ]
+        expected_result = (2.2, 6.25)
+
+        result = get_average_vector(vectors, computation_method="median")
+        self.assertEqual(expected_result, result)
+
+    def test_get_average_vect_5(self):
+        """get_average_vect can get the mode vector from a list of vectors."""
+
+        vectors = [
+            (3.2, 7.1),
+            (2.1, 5.9),
+            (1.8, 6.2),
+            (2.0, 5.8),
+            (1.8, 6.5),
+            (2.3, 6.8),
+            (2.5, 5.9),
+            (2.9, 6.3),
+        ]
+        expected_result = (1.8, 5.9)
+
+        result = get_average_vector(vectors, computation_method="mode")
         self.assertEqual(expected_result, result)
 
 
