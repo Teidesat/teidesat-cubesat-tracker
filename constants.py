@@ -7,7 +7,9 @@ Simple script to define every needed constant for the program.
 from datetime import datetime
 from pathlib import Path
 
-# * Constants
+
+# * Constants:
+
 STAR_DETECTOR_THRESHOLD = 50
 FAST = True
 MIN_PRUNE_DISTANCE = 20.0
@@ -16,7 +18,6 @@ SAT_DESIRED_BLINKING_FREQ = 15.0
 MOVEMENT_THRESHOLD = 3.0
 PX_SENSITIVITY = 8
 
-PATH_FRAME = Path("./data/images/original.jpg")
 PATH_VIDEO = Path("./data/videos/video4.mp4")
 PATH_SAT_LOG = Path("./data/logs/satellite_log.csv")
 
