@@ -38,6 +38,7 @@ def id_generator() -> Generator:
         next_id += 1
 
 
+# @dataclass  # ToDo: test if implementing dataclass does not lead to a loss of performance
 class Star:
     """Class to represent a detected star (or satellite) and save its data for tracking
     purposes."""
