@@ -1,0 +1,16 @@
+services:
+  teidesat-cubesat-tracker:
+    image: teidesat-cubesat-tracker:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: teidesat-cubesat-tracker
+    network_mode: host
+    environment:
+      - DISPLAY=${DISPLAY}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - $HOME/.Xauthority:/root/.Xauthority:ro
+      - .:/app
+    working_dir: /app
+    command: "python3 main.py"

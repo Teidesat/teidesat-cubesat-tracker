@@ -1,4 +1,4 @@
-coverage
-imutils
-numpy
-opencv-python
+coverage==7.3.2
+imutils==0.5.4
+numpy==1.26.1
+opencv-python==4.8.1.78
