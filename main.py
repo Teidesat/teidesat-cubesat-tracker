@@ -327,6 +327,8 @@ def draw_path(
 
 
 def tracking_phase_video_simulation(satellite, show_frame, frame_center):
+    """Function to simulate the tracking phase of the satellite by moving each frame to
+    set the target satellite in the center of the video."""
 
     translation_vector = [
         frame_center[0] - satellite.expected_position[0],
