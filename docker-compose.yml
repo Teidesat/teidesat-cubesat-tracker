@@ -12,5 +12,7 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix
       - $HOME/.Xauthority:/root/.Xauthority:ro
       - .:/app
+    devices:
+      - /dev/video0:/dev/video0
     working_dir: /app
     command: "python3 main.py"
