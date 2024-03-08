@@ -58,7 +58,8 @@ class StarClassTestCase(unittest.TestCase):
             "color": [255, 0, 0],
             "frames_since_last_detection": 0,
             "last_detected_position": None,
-            "expected_position": None,
+            "next_expected_position": None,
+            "last_predicted_position": None,
         }
 
         result = Star()
@@ -83,7 +84,8 @@ class StarClassTestCase(unittest.TestCase):
             "color": [0, 0, 100],
             "frames_since_last_detection": 1,
             "last_detected_position": (10, 15),
-            "expected_position": (10, 15),
+            "next_expected_position": (10, 15),
+            "last_predicted_position": (10, 15),
         }
 
         result = Star(
@@ -170,7 +172,8 @@ class StarClassTestCase(unittest.TestCase):
                     "color": [255, 0.0, 0.0],
                     "frames_since_last_detection": 0,
                     "last_detected_position": None,
-                    "expected_position": None,
+                    "next_expected_position": None,
+                    "last_predicted_position": None,
                 }
             )
         )
@@ -208,6 +211,7 @@ class StarClassTestCase(unittest.TestCase):
                 blinking_freq=video_fps,
                 detection_confidence=-1,
                 movement_vector=(1, 1),
+                last_predicted_position=(10, 15),
             )
         }
 
@@ -525,8 +529,8 @@ class StarClassTestCase(unittest.TestCase):
         result = star.get_individual_movement_vectors()
         self.assertEqual(expected_result, result)
 
-    def test_expected_position_1(self):
-        """expected_position can return the expected position of a static star."""
+    def test_next_expected_position_1(self):
+        """next_expected_position can return the expected position of a static star."""
 
         star = Star(
             movement_vector=(0, 0),
@@ -535,10 +539,10 @@ class StarClassTestCase(unittest.TestCase):
         )
         expected_result = (10, 15)
 
-        self.assertEqual(expected_result, star.expected_position)
+        self.assertEqual(expected_result, star.next_expected_position)
 
-    def test_expected_position_2(self):
-        """expected_position can return the expected position of a moving star."""
+    def test_next_expected_position_2(self):
+        """next_expected_position can return the expected position of a moving star."""
 
         star = Star(
             movement_vector=(1, 1),
@@ -547,10 +551,10 @@ class StarClassTestCase(unittest.TestCase):
         )
         expected_result = (11, 16)
 
-        self.assertEqual(expected_result, star.expected_position)
+        self.assertEqual(expected_result, star.next_expected_position)
 
-    def test_expected_position_3(self):
-        """expected_position can return the expected position of a lost moving star."""
+    def test_next_expected_position_3(self):
+        """next_expected_position can return the expected position of a lost moving star."""
 
         star = Star(
             movement_vector=(1, 1),
@@ -559,7 +563,29 @@ class StarClassTestCase(unittest.TestCase):
         )
         expected_result = (13, 18)
 
-        self.assertEqual(expected_result, star.expected_position)
+        self.assertEqual(expected_result, star.next_expected_position)
+
+    def test_last_predicted_position_1(self):
+        """last_predicted_position can return the last predicted position of a static star."""
+
+        star = Star(
+            last_positions=[(10, 15)],
+            movement_vector=(0, 0),
+        )
+        expected_result = (10, 15)
+
+        self.assertEqual(expected_result, star.last_predicted_position)
+
+    def test_last_predicted_position_2(self):
+        """last_predicted_position can return the last predicted position of a moving star."""
+
+        star = Star(
+            last_positions=[(10, 15)],
+            movement_vector=(1, 1),
+        )
+        expected_result = (11, 16)
+
+        self.assertEqual(expected_result, star.last_predicted_position)
 
     def test_last_detected_position_1(self):
         """last_detected_position can return the last detected position of the star."""

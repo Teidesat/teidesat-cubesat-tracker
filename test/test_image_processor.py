@@ -15,7 +15,7 @@ import cv2 as cv
 
 from src.image_processor import (
     detect_stars,
-    prune_close_points,
+    _prune_close_points,
     track_stars,
     detect_shooting_stars,
     detect_blinking_star,
@@ -73,7 +73,7 @@ class ImageProcessorTestCase(unittest.TestCase):
         ]
         expected_result = [(10, 10)]
 
-        result = prune_close_points(star_positions, min_prune_distance=5)
+        result = _prune_close_points(star_positions, min_prune_distance=5)
         self.assertEqual(expected_result, result)
 
     def test_prune_close_points_2(self):
@@ -89,7 +89,7 @@ class ImageProcessorTestCase(unittest.TestCase):
             (15, 15),
         ]
 
-        result = prune_close_points(star_positions, min_prune_distance=5)
+        result = _prune_close_points(star_positions, min_prune_distance=5)
         self.assertEqual(expected_result, result)
 
     def test_track_stars_0(self):
@@ -175,6 +175,7 @@ class ImageProcessorTestCase(unittest.TestCase):
                 detection_confidence=1,
                 movement_vector=(0, 0),
                 color=[],
+                last_predicted_position=(10, 15),
             )
         }
 

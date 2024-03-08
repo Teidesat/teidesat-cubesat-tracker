@@ -11,16 +11,16 @@ from time import time
 from typing import Generator, Optional
 
 from constants import (
-    SAT_DESIRED_BLINKING_FREQ,
     VIDEO_FPS,
     DEFAULT_LEFT_LIFETIME,
+    MAX_HISTORY_LENGTH,
+    SAT_DESIRED_BLINKING_FREQ,
+    FREQUENCY_THRESHOLD,
     DEFAULT_VECTOR,
     MIN_HISTORY_LENGTH,
-    MAX_HISTORY_LENGTH,
     REMOVE_OUTLIERS,
     MAX_OUTLIER_THRESHOLD,
     MAX_MOVE_DISTANCE,
-    FREQUENCY_THRESHOLD,
     MOVEMENT_VECTOR_COMPUTATION_METHOD,
 )
 
@@ -57,7 +57,8 @@ class Star:
         color: list[int] = None,
         frames_since_last_detection: int = None,
         last_detected_position: tuple[int, int] = None,
-        expected_position: tuple[int, int] = None,
+        next_expected_position: tuple[int, int] = None,
+        last_predicted_position: tuple[int, int] = None,
     ):
         self.id = next(self._id)
 
@@ -86,7 +87,15 @@ class Star:
         if frames_since_last_detection is not None:
             self.frames_since_last_detection = frames_since_last_detection
 
-        self.expected_position = self.get_new_expected_position(expected_position)
+        self.next_expected_position = self.get_new_expected_position(
+            next_expected_position
+        )
+
+        self.last_predicted_position = (
+            last_predicted_position
+            if last_predicted_position is not None
+            else self.next_expected_position
+        )
 
     def __hash__(self) -> int:
         """Function to set the star's id as the object's hash value."""
@@ -144,6 +153,7 @@ class Star:
             self.left_lifetime = default_left_lifetime
             self.frames_since_last_detection = 1
             self.last_detected_position = new_star_pos
+            self.last_predicted_position = self.next_expected_position
 
         self.last_positions = self.last_positions[-max_history_length:]
         self.last_times_detected = self.last_times_detected[-max_history_length:]
@@ -157,7 +167,7 @@ class Star:
             default_vector,
             movement_vector_computation_method,
         )
-        self.expected_position = self.get_new_expected_position()
+        self.next_expected_position = self.get_new_expected_position()
 
         self.blinking_freq = video_fps * (
             sum(self.last_times_detected) / len(self.last_times_detected)
@@ -189,15 +199,15 @@ class Star:
             return None
 
         try:
-            star_positions.index(self.expected_position)
-            return self.expected_position
+            star_positions.index(self.next_expected_position)
+            return self.next_expected_position
 
         except ValueError:
             new_star_pos = None
             best_candidate_dist = max_move_distance
 
             for current_star_pos in star_positions:
-                current_pair_dist = dist(self.expected_position, current_star_pos)
+                current_pair_dist = dist(self.next_expected_position, current_star_pos)
 
                 if current_pair_dist < best_candidate_dist:
                     best_candidate_dist = current_pair_dist

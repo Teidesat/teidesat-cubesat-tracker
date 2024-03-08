@@ -43,23 +43,32 @@ from src.image_processor import (
 )
 from src.star import Star
 from constants import (
+    VIDEO_FROM_CAMERA,
+    CAMERA_INDEX,
+    PATH_INPUT_VIDEO,
+    RGB_IMAGE,
+    SHOW_VIDEO_RESULT,
+    SIMULATE_TRACKING,
+    MARK_DETECTED_STARS,
+    MARK_TRACKED_STARS,
+    MARK_SHOOTING_STARS,
+    MARK_SATELLITE,
+    MARK_MOVEMENT_VECTOR,
+    MARK_NEXT_EXPECTED_POSITION,
+    MARK_LAST_PREDICTED_POSITION,
+    COLORIZED_TRACKED_STARS,
+    PX_SENSITIVITY,
+    OUTPUT_RAW_VIDEO_TO_FILE,
+    PATH_OUTPUT_RAW_VIDEO,
+    OUTPUT_PROCESSED_VIDEO_TO_FILE,
+    PATH_OUTPUT_PROCESSED_VIDEO,
+    OUTPUT_SAT_LOG_TO_FILE,
+    PATH_OUTPUT_SAT_LOG,
     STAR_DETECTOR_THRESHOLD,
-    FAST,
+    PRUNE_CLOSE_POINTS,
     MIN_PRUNE_DISTANCE,
     SAT_DESIRED_BLINKING_FREQ,
     MOVEMENT_THRESHOLD,
-    PX_SENSITIVITY,
-    PATH_VIDEO,
-    PATH_SAT_LOG,
-    RGB_IMAGE,
-    VIDEO_FROM_CAMERA,
-    SHOW_VIDEO_RESULT,
-    COLORIZED_TRACKED_STARS,
-    SIMULATE_TRACKING,
-    OUTPUT_RAW_VIDEO_TO_FILE,
-    OUTPUT_PROCESSED_VIDEO_TO_FILE,
-    PATH_OUTPUT_RAW_VIDEO,
-    PATH_OUTPUT_PROCESSED_VIDEO,
 )
 
 
@@ -67,11 +76,11 @@ def main():
     """Main function to start the program execution."""
 
     if VIDEO_FROM_CAMERA:
-        video_path = 0  # Default webcam id
+        video_path = CAMERA_INDEX
         print("Processing video from camera number ", video_path)
 
     else:
-        video_path = str(PATH_VIDEO)
+        video_path = str(PATH_INPUT_VIDEO)
         print("Processing video from:", video_path)
 
     vid_cap = cv.VideoCapture(video_path)
@@ -85,13 +94,17 @@ def satellite_detection_test(
     vid_cap,
     sat_desired_blinking_freq: float = SAT_DESIRED_BLINKING_FREQ,
     star_detector_threshold: int = STAR_DETECTOR_THRESHOLD,
-    fast: bool = FAST,
+    prune_close_points: bool = PRUNE_CLOSE_POINTS,
     min_prune_distance: float = MIN_PRUNE_DISTANCE,
     movement_threshold: float = MOVEMENT_THRESHOLD,
     rgb_image: bool = RGB_IMAGE,
     show_video_result: bool = SHOW_VIDEO_RESULT,
+    output_sat_log_to_file: bool = OUTPUT_SAT_LOG_TO_FILE,
+    path_output_sat_log: str = str(PATH_OUTPUT_SAT_LOG),
     output_raw_video_to_file: bool = OUTPUT_RAW_VIDEO_TO_FILE,
+    path_output_raw_video: str = str(PATH_OUTPUT_RAW_VIDEO),
     output_processed_video_to_file: bool = OUTPUT_PROCESSED_VIDEO_TO_FILE,
+    path_output_processed_video: str = str(PATH_OUTPUT_PROCESSED_VIDEO),
 ):
     """Function to detect and track the satellite."""
 
@@ -122,13 +135,13 @@ def satellite_detection_test(
     start_time = perf_counter()
 
     output_raw_video = (
-        create_export_video_file(vid_cap, str(PATH_OUTPUT_RAW_VIDEO))
+        create_export_video_file(vid_cap, path_output_raw_video)
         if output_raw_video_to_file
         else None
     )
 
     output_processed_video = (
-        create_export_video_file(vid_cap, str(PATH_OUTPUT_PROCESSED_VIDEO))
+        create_export_video_file(vid_cap, path_output_processed_video)
         if output_processed_video_to_file
         else None
     )
@@ -145,7 +158,12 @@ def satellite_detection_test(
 
         gray = cv.cvtColor(frame, cv.COLOR_RGB2GRAY) if rgb_image else frame
 
-        new_star_positions = detect_stars(gray, star_detector, fast, min_prune_distance)
+        new_star_positions = detect_stars(
+            gray,
+            star_detector,
+            prune_close_points,
+            min_prune_distance,
+        )
 
         track_stars(
             new_star_positions,
@@ -195,13 +213,15 @@ def satellite_detection_test(
             wait_time = wait_options.get(key, wait_time)
 
     print_time_statistics(processed_frames, start_time)
-    export_satellite_log(satellite_log)
+
+    if output_sat_log_to_file:
+        export_satellite_log(satellite_log, path_output_sat_log)
 
     if output_raw_video is not None:
-        print(f"Raw video saved on '{str(PATH_OUTPUT_RAW_VIDEO)}'")
+        print(f"Raw video saved on '{path_output_raw_video}'")
 
     if output_processed_video is not None:
-        print(f"Processed video saved on '{str(PATH_OUTPUT_PROCESSED_VIDEO)}'")
+        print(f"Processed video saved on '{path_output_processed_video}'")
 
     cv.destroyAllWindows()
 
@@ -226,6 +246,13 @@ def draw_in_frame(
     tracked_stars: set[Star] = None,
     shooting_stars: set[Star] = None,
     satellite: Star = None,
+    mark_new_stars: bool = MARK_DETECTED_STARS,
+    mark_tracked_stars: bool = MARK_TRACKED_STARS,
+    mark_shooting_stars: bool = MARK_SHOOTING_STARS,
+    mark_satellite: bool = MARK_SATELLITE,
+    mark_movement_vector: bool = MARK_MOVEMENT_VECTOR,
+    mark_next_expected_position: bool = MARK_NEXT_EXPECTED_POSITION,
+    mark_last_position_prediction: bool = MARK_LAST_PREDICTED_POSITION,
 ):
     """
     Function to draw information about the detected elements in the image frame.
@@ -235,25 +262,56 @@ def draw_in_frame(
     return statement for memory usage reduction purposes.
     """
 
-    # for star in new_star_positions if new_star_positions is not None else []:
-    #     draw_position(show_frame, star)
+    if mark_new_stars and new_star_positions is not None:
+        for star in new_star_positions:
+            draw_position(show_frame, star)
 
-    for star in tracked_stars if tracked_stars is not None else []:
-        draw_position(show_frame, star.last_detected_position)
+    if mark_tracked_stars and tracked_stars is not None:
+        for star in tracked_stars:
+            draw_position(show_frame, star.last_detected_position)
 
-    for star in shooting_stars if shooting_stars is not None else []:
-        draw_path(show_frame, star)
-        draw_position(show_frame, star.last_detected_position, color=(0, 200, 200))
-        draw_position(
-            show_frame, star.expected_position, color=(200, 200, 0), thickness=1
-        )
+    if mark_shooting_stars and shooting_stars is not None:
+        for star in shooting_stars:
+            if mark_movement_vector:
+                draw_path(show_frame, star)
 
-    if satellite is not None:
-        draw_path(show_frame, satellite)
+            draw_position(show_frame, star.last_detected_position, color=(0, 200, 200))
+
+            if mark_next_expected_position:
+                draw_position(
+                    show_frame,
+                    star.next_expected_position,
+                    color=(200, 200, 0),
+                    thickness=1,
+                )
+            if mark_last_position_prediction:
+                draw_position(
+                    show_frame,
+                    star.last_predicted_position,
+                    color=(200, 0, 200),
+                    thickness=1,
+                )
+
+    if mark_satellite and satellite is not None:
+        if mark_movement_vector:
+            draw_path(show_frame, satellite)
+
         draw_position(show_frame, satellite.last_detected_position, color=(0, 200, 0))
-        draw_position(
-            show_frame, satellite.expected_position, color=(200, 200, 0), thickness=1
-        )
+
+        if mark_next_expected_position:
+            draw_position(
+                show_frame,
+                satellite.next_expected_position,
+                color=(200, 200, 0),
+                thickness=1,
+            )
+        if mark_last_position_prediction:
+            draw_position(
+                show_frame,
+                satellite.last_predicted_position,
+                color=(200, 0, 200),
+                thickness=1,
+            )
 
 
 def draw_position(
@@ -331,8 +389,8 @@ def tracking_phase_video_simulation(satellite, show_frame, frame_center):
     set the target satellite in the center of the video."""
 
     translation_vector = [
-        frame_center[0] - satellite.expected_position[0],
-        frame_center[1] - satellite.expected_position[1],
+        frame_center[0] - satellite.next_expected_position[0],
+        frame_center[1] - satellite.next_expected_position[1],
     ]
 
     return translate(show_frame, translation_vector[0], translation_vector[1])
@@ -362,10 +420,13 @@ def create_export_video_file(vid_cap, output_video_path: str):
     return output_video
 
 
-def export_satellite_log(satellite_log: list[Star]):
+def export_satellite_log(
+    satellite_log: list[Star],
+    path_output_sat_log: str = str(PATH_OUTPUT_SAT_LOG),
+):
     """Function to export the satellite log into a file."""
 
-    with open(str(PATH_SAT_LOG), "w", encoding="utf-8-sig") as file:
+    with open(path_output_sat_log, "w", encoding="utf-8-sig") as file:
         print(
             "id;",
             "last_times_detected;",
@@ -376,7 +437,8 @@ def export_satellite_log(satellite_log: list[Star]):
             "movement_vector;",
             "frames_since_last_detection;",
             "last_detected_position;",
-            "expected_position;",
+            "next_expected_position;",
+            "last_predicted_position",
             "last_positions;",
             file=file,
         )
@@ -392,7 +454,8 @@ def export_satellite_log(satellite_log: list[Star]):
                 f"{star.movement_vector};",
                 f"{star.frames_since_last_detection};",
                 f"{star.last_detected_position};",
-                f"{star.expected_position};",
+                f"{star.next_expected_position};",
+                f"{star.last_predicted_position};",
                 f"{star.last_positions};",
                 file=file,
             )

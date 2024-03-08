@@ -11,21 +11,21 @@ from typing import Optional
 from src.star import Star
 
 from constants import (
-    FAST,
-    MIN_PRUNE_DISTANCE,
-    SAT_DESIRED_BLINKING_FREQ,
     VIDEO_FPS,
+    PRUNE_CLOSE_POINTS,
+    MIN_PRUNE_DISTANCE,
     DEFAULT_LEFT_LIFETIME,
+    SAT_DESIRED_BLINKING_FREQ,
+    MIN_DETECTION_CONFIDENCE,
     DEFAULT_VECTOR,
     MOVEMENT_THRESHOLD,
-    MIN_DETECTION_CONFIDENCE,
 )
 
 
 def detect_stars(
     image,
     star_detector,
-    fast: bool = FAST,
+    prune_close_points: bool = PRUNE_CLOSE_POINTS,
     min_prune_distance: float = MIN_PRUNE_DISTANCE,
 ) -> list[tuple[int, int]]:
     """Function to get all the bright points of a given image."""
@@ -33,10 +33,14 @@ def detect_stars(
     keypoints = star_detector.detect(image, None)
     points = [keypoint.pt for keypoint in keypoints]
 
-    return points if fast else prune_close_points(points, min_prune_distance)
+    return (
+        _prune_close_points(points, min_prune_distance)
+        if prune_close_points
+        else points
+    )
 
 
-def prune_close_points(
+def _prune_close_points(
     points: list[tuple[int, int]],
     min_prune_distance: float = MIN_PRUNE_DISTANCE,
 ) -> list[tuple[int, int]]:
