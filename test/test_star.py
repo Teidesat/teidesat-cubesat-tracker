@@ -22,7 +22,7 @@ from src.star import (
 
 
 class StarClassTestCase(unittest.TestCase):
-    """Class to test the image_processor script."""
+    """Class to test the Star class and its methods."""
 
     @classmethod
     def setUpClass(cls):

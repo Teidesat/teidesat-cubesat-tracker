@@ -9,10 +9,11 @@ services:
     environment:
       - DISPLAY=${DISPLAY}
     volumes:
-      - /tmp/.X11-unix:/tmp/.X11-unix
+      - /dev/bus/usb:/dev/bus/usb:ro
+      - /tmp/.X11-unix:/tmp/.X11-unix:ro
       - $HOME/.Xauthority:/root/.Xauthority:ro
       - .:/app
-    devices:
-      - /dev/video0:/dev/video0
+    device_cgroup_rules:
+      - c 189:* rmw
     working_dir: /app
     command: "python3 main.py"

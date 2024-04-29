@@ -8,14 +8,16 @@ from datetime import datetime
 from pathlib import Path
 
 
-
 ##################
 # Input settings #
 ##################
 
-# If true, the program will use camera frames as input stream
-#  else, it will use a video file
-VIDEO_FROM_CAMERA = False
+# Type of the input stream to use
+#  The supported types are:
+#    - "VIDEO_FILE" for pre-recorded videos
+#    - "WEBCAM" for USB webcams detected by OpenCV
+#    - "ZWOASI" for ZWO ASI cameras detected by the ZWO ASI SDK
+SOURCE_TYPE = "ZWOASI"
 
 # If using a camera, index of the camera to use.
 #  The default camera value is 0
@@ -24,11 +26,9 @@ CAMERA_INDEX = 0
 # If NOT using a camera, path to the video file to use
 PATH_INPUT_VIDEO = Path("./data/videos/video4.mp4")
 
-# If true, treat the input stream as an RGB image
-#  else, treat it as a monochrome image
-RGB_IMAGE = True
-# Frames per second of the input stream
-VIDEO_FPS = 60.0
+# Default frames per second of the input stream (only used if it couldn't be retrieved
+#  from the input source's information)
+VIDEO_FPS = 15.0
 
 
 ###################
@@ -98,7 +98,7 @@ PATH_OUTPUT_SAT_LOG = Path(
 #################
 
 # Minimum brightness to be considered a star
-STAR_DETECTOR_THRESHOLD = 50
+STAR_DETECTOR_THRESHOLD = 30
 
 # If true, the program will prune close points to avoid duplicate stars
 #  else, it will keep all the detected stars
@@ -143,6 +143,6 @@ REMOVE_OUTLIERS = True
 # Threshold to consider a movement vector as an outlier
 MAX_OUTLIER_THRESHOLD = 1.5
 # Maximum distance difference to consider a movement vector as an outlier
-MAX_MOVE_DISTANCE = 10.0
+MAX_MOVE_DISTANCE = 100.0
 # Method to compute the average movement vector of a star
 MOVEMENT_VECTOR_COMPUTATION_METHOD = "mean"
