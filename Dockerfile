@@ -28,7 +28,7 @@ RUN pip3 install --no-cache-dir --requirement /tmp/requirements.txt \
 WORKDIR /tmp
 RUN wget --output-document=ASI_Camera_SDK.zip \
         --output-file=/dev/null \
-        https://e.zwoastro.com/attachments/1711105859128-ILxbipvA78.zip\
+        "https://drive.usercontent.google.com/download?id=1iykpJYbkUx5H9aESjtk6ac--Bpflq-HR&export=download&authuser=1&confirm=t"\
     && unzip /tmp/ASI_Camera_SDK.zip \
     && tar --extract --verbose --bzip2 --file ASI_Camera_SDK/ASI_linux_mac_SDK_V*.tar.bz2 \
     && rm --recursive ASI_Camera_SDK.zip ASI_Camera_SDK \
