@@ -18,7 +18,7 @@ This program is used to track the satellite using an Optical Ground Station (OGS
       
    3. Run the docker container:
       ```
-      docker compose run --rm teidesat-cubesat-tracker
+      $ docker compose run --rm teidesat-cubesat-tracker
       ```
       
 ## Development installation:

@@ -62,7 +62,9 @@ MARK_LAST_PREDICTED_POSITION = True
 # If true, the program will draw the tracked stars in different colors
 COLORIZED_TRACKED_STARS = False
 # Radius of the circle to draw around each star
-PX_SENSITIVITY = 8
+MARK_RADIUS = 8
+# Thickness of the line to draw around each star
+MARK_THICKNESS = 2
 
 # If true, the program will dump the input stream frames into a video file
 OUTPUT_RAW_VIDEO_TO_FILE = True

@@ -54,7 +54,8 @@ from constants import (
     MARK_NEXT_EXPECTED_POSITION,
     MARK_LAST_PREDICTED_POSITION,
     COLORIZED_TRACKED_STARS,
-    PX_SENSITIVITY,
+    MARK_RADIUS,
+    MARK_THICKNESS,
     OUTPUT_RAW_VIDEO_TO_FILE,
     PATH_OUTPUT_RAW_VIDEO,
     OUTPUT_PROCESSED_VIDEO_TO_FILE,
@@ -138,7 +139,10 @@ def satellite_detection_test(
         # Get the next frame from the input stream
         frame = input_stream.get_next_frame()
         if frame is None:
-            continue
+            if input_stream.source_type == "VIDEO_FILE":
+                break  # Exiting because the video file has probably ended
+            else:
+                continue
 
         processed_frames += 1
 
@@ -188,8 +192,10 @@ def satellite_detection_test(
         )
 
         if satellite is not None:
+            # Save the current satellite information to store as a log
             satellite_log.append(deepcopy(satellite))
 
+            # Transform the frame to simulate the tracking phase if needed
             if simulate_tracking:
                 show_frame = tracking_phase_video_simulation(
                     satellite, show_frame, input_stream.frame_center
@@ -268,6 +274,7 @@ def draw_in_frame(
     mark_movement_vector: bool = MARK_MOVEMENT_VECTOR,
     mark_next_expected_position: bool = MARK_NEXT_EXPECTED_POSITION,
     mark_last_position_prediction: bool = MARK_LAST_PREDICTED_POSITION,
+    colorized_tracked_stars: bool = COLORIZED_TRACKED_STARS,
 ):
     """
     Function to draw information about the detected elements in the image frame.
@@ -283,7 +290,12 @@ def draw_in_frame(
 
     if mark_tracked_stars and tracked_stars is not None:
         for star in tracked_stars:
-            draw_position(show_frame, star.last_detected_position)
+            if colorized_tracked_stars and isinstance(star, Star):
+                draw_color = star.color
+            else:
+                draw_color = None
+
+            draw_position(show_frame, star.last_detected_position, color=draw_color)
 
     if mark_shooting_stars and shooting_stars is not None:
         for star in shooting_stars:
@@ -332,10 +344,9 @@ def draw_in_frame(
 def draw_position(
     show_frame,
     target: tuple[int, int],
-    radius: int = PX_SENSITIVITY,
+    radius: int = MARK_RADIUS,
     color: tuple = None,
-    colorized_tracked_stars: bool = COLORIZED_TRACKED_STARS,
-    thickness: int = 2,
+    thickness: int = MARK_THICKNESS,
 ):
     """
     Function to draw in the given frame a circle around the given position.
@@ -349,10 +360,7 @@ def draw_position(
     """
 
     if color is None:
-        if colorized_tracked_stars and isinstance(target, Star):
-            draw_color = target.color
-        else:
-            draw_color = (0, 0, 100)
+        draw_color = (0, 0, 100)
     else:
         draw_color = color
 
