@@ -16,24 +16,22 @@ TeideSat Satellite Tracking for the Optical Ground Station
 
 # ToDo: add the missing module information
 __authors__ = ["Jorge Sierra", "Sergio Tabares Hernández"]
-# __contact__ = "mail@example.com"
+__contact__ = "teidesat@ull.edu.es"
 # __copyright__ = "Copyright $YEAR, $COMPANY_NAME"
 __credits__ = ["Jorge Sierra", "Sergio Tabares Hernández"]
-__date__ = "2022/06/12"
+__date__ = "2024/10/25"
 __deprecated__ = False
-# __email__ = "mail@example.com"
+__email__ = "teidesat@ull.edu.es"
 # __license__ = "GPLv3"
 __maintainer__ = "Sergio Tabares Hernández"
 __status__ = "Production"
-__version__ = "0.0.9"
+__version__ = "0.0.10"
 
 from copy import deepcopy
-from itertools import pairwise as itertools__pairwise
 from sys import exit as sys__exit
 from time import perf_counter as time__perf_counter
 
 import cv2 as cv
-from imutils import translate as imutils__translate
 
 from src.image_processor import (
     detect_stars,
@@ -46,16 +44,6 @@ from src.star import Star
 from constants import (
     SHOW_VIDEO_RESULT,
     SIMULATE_TRACKING,
-    MARK_DETECTED_STARS,
-    MARK_TRACKED_STARS,
-    MARK_SHOOTING_STARS,
-    MARK_SATELLITE,
-    MARK_MOVEMENT_VECTOR,
-    MARK_NEXT_EXPECTED_POSITION,
-    MARK_LAST_PREDICTED_POSITION,
-    COLORIZED_TRACKED_STARS,
-    MARK_RADIUS,
-    MARK_THICKNESS,
     OUTPUT_RAW_VIDEO_TO_FILE,
     PATH_OUTPUT_RAW_VIDEO,
     OUTPUT_PROCESSED_VIDEO_TO_FILE,
@@ -137,8 +125,8 @@ def satellite_detection_test(
     while True:
 
         # Get the next frame from the input stream
-        frame = input_stream.get_next_frame()
-        if frame is None:
+        raw_frame = input_stream.get_next_frame()
+        if raw_frame is None:
             if input_stream.source_type == "VIDEO_FILE":
                 break  # Exiting because the video file has probably ended
             else:
@@ -147,11 +135,7 @@ def satellite_detection_test(
         processed_frames += 1
 
         # Convert the frame to grayscale if not already
-        grayscale_frame = (
-            cv.cvtColor(frame, cv.COLOR_RGB2GRAY)
-            if input_stream.is_color_camera
-            else frame
-        )
+        grayscale_frame = raw_frame.to_grayscale()
 
         # Detect the sky objects in the current frame
         new_star_positions = detect_stars(
@@ -175,16 +159,11 @@ def satellite_detection_test(
         # Get the object with the blinking frequency closest to the desired one
         satellite = detect_blinking_star(shooting_stars)
 
-        # Prepare the frame to show the detected objects
-        show_frame = (
-            frame.copy()
-            if input_stream.is_color_camera
-            else cv.cvtColor(frame, cv.COLOR_GRAY2RGB)
-        )
+        # Prepare a copy of the raw frame to mark the detected objects
+        show_frame = raw_frame.to_colorspace()
 
-        # Draw the detected objects in the frame
-        draw_in_frame(
-            show_frame,
+        # Mark the detected objects in the frame
+        show_frame.mark(
             new_star_positions,
             tracked_stars,
             shooting_stars,
@@ -197,25 +176,19 @@ def satellite_detection_test(
 
             # Transform the frame to simulate the tracking phase if needed
             if simulate_tracking:
-                show_frame = tracking_phase_video_simulation(
-                    satellite, show_frame, input_stream.frame_center
-                )
+                show_frame.tracking_phase_video_simulation(satellite)
 
         # Export the raw frame to the output video file if needed
         if output_raw_video is not None:
-            output_raw_video.write(
-                frame.copy()
-                if input_stream.is_color_camera
-                else cv.cvtColor(frame, cv.COLOR_GRAY2RGB)
-            )
+            output_raw_video.write(grayscale_frame.to_colorspace().data)
 
         # Export the processed frame to the output video file if needed
         if output_processed_video is not None:
-            output_processed_video.write(show_frame)
+            output_processed_video.write(show_frame.data)
 
         # Show the processed frame in the visualization window if needed
         if show_video_result:
-            cv.imshow("Satellite detection", show_frame)
+            cv.imshow("Satellite detection", show_frame.data)
 
             # Wait for the user input to change the visualization speed or exit the
             #  program
@@ -259,164 +232,6 @@ def print_time_statistics(
     print("  Processed frames:", processed_frames)
     print("  Time needed:", processing_time)
     print("  Estimated FPS:", processed_frames / processing_time)
-
-
-def draw_in_frame(
-    show_frame,
-    new_star_positions: list[tuple[int, int]] = None,
-    tracked_stars: set[Star] = None,
-    shooting_stars: set[Star] = None,
-    satellite: Star = None,
-    mark_new_stars: bool = MARK_DETECTED_STARS,
-    mark_tracked_stars: bool = MARK_TRACKED_STARS,
-    mark_shooting_stars: bool = MARK_SHOOTING_STARS,
-    mark_satellite: bool = MARK_SATELLITE,
-    mark_movement_vector: bool = MARK_MOVEMENT_VECTOR,
-    mark_next_expected_position: bool = MARK_NEXT_EXPECTED_POSITION,
-    mark_last_position_prediction: bool = MARK_LAST_PREDICTED_POSITION,
-    colorized_tracked_stars: bool = COLORIZED_TRACKED_STARS,
-):
-    """
-    Function to draw information about the detected elements in the image frame.
-    <br/><br/>
-
-    Note: This function modifies data from 'show_frame' parameter without an explicit
-    return statement for memory usage reduction purposes.
-    """
-
-    if mark_new_stars and new_star_positions is not None:
-        for star in new_star_positions:
-            draw_position(show_frame, star)
-
-    if mark_tracked_stars and tracked_stars is not None:
-        for star in tracked_stars:
-            if colorized_tracked_stars and isinstance(star, Star):
-                draw_color = star.color
-            else:
-                draw_color = None
-
-            draw_position(show_frame, star.last_detected_position, color=draw_color)
-
-    if mark_shooting_stars and shooting_stars is not None:
-        for star in shooting_stars:
-            if mark_movement_vector:
-                draw_path(show_frame, star)
-
-            draw_position(show_frame, star.last_detected_position, color=(0, 200, 200))
-
-            if mark_next_expected_position:
-                draw_position(
-                    show_frame,
-                    star.next_expected_position,
-                    color=(200, 200, 0),
-                    thickness=1,
-                )
-            if mark_last_position_prediction:
-                draw_position(
-                    show_frame,
-                    star.last_predicted_position,
-                    color=(200, 0, 200),
-                    thickness=1,
-                )
-
-    if mark_satellite and satellite is not None:
-        if mark_movement_vector:
-            draw_path(show_frame, satellite)
-
-        draw_position(show_frame, satellite.last_detected_position, color=(0, 200, 0))
-
-        if mark_next_expected_position:
-            draw_position(
-                show_frame,
-                satellite.next_expected_position,
-                color=(200, 200, 0),
-                thickness=1,
-            )
-        if mark_last_position_prediction:
-            draw_position(
-                show_frame,
-                satellite.last_predicted_position,
-                color=(200, 0, 200),
-                thickness=1,
-            )
-
-
-def draw_position(
-    show_frame,
-    target: tuple[int, int],
-    radius: int = MARK_RADIUS,
-    color: tuple = None,
-    thickness: int = MARK_THICKNESS,
-):
-    """
-    Function to draw in the given frame a circle around the given position.
-    <br/><br/>
-
-    Note: This function modifies data from 'show_frame' parameter without an explicit
-    return statement for memory usage reduction purposes.
-    <br/><br/>
-
-    Note: colorized_tracked_stars parameter is ignored if color parameter is not None.
-    """
-
-    if color is None:
-        draw_color = (0, 0, 100)
-    else:
-        draw_color = color
-
-    cv.circle(
-        show_frame,
-        center=(
-            int(target[0]),
-            int(target[1]),
-        ),
-        radius=radius,
-        color=draw_color,
-        thickness=thickness,
-    )
-
-
-def draw_path(
-    show_frame,
-    targets: Star | set[Star],
-    color: tuple = (200, 200, 0),
-    thickness: int = 1,
-):
-    """
-    Function to draw in the given frame a line through the last detected positions of
-    the given objects.
-    <br/><br/>
-
-    Note: This function modifies data from 'show_frame' parameter without an explicit
-    return statement for memory usage reduction purposes.
-    """
-
-    for target in {targets} if isinstance(targets, Star) else targets:
-        last_positions = [
-            [round(axis) for axis in pos]
-            for pos in target.last_positions
-            if pos is not None
-        ]
-        for pos_1, pos_2 in itertools__pairwise(last_positions):
-            cv.line(
-                show_frame,
-                pt1=pos_1,
-                pt2=pos_2,
-                color=color,
-                thickness=thickness,
-            )
-
-
-def tracking_phase_video_simulation(satellite, show_frame, frame_center):
-    """Function to simulate the tracking phase of the satellite by moving each frame to
-    set the target satellite in the center of the video."""
-
-    translation_vector = [
-        frame_center[0] - satellite.next_expected_position[0],
-        frame_center[1] - satellite.next_expected_position[1],
-    ]
-
-    return imutils__translate(show_frame, translation_vector[0], translation_vector[1])
 
 
 def create_export_video_file(input_stream, output_video_path: str):

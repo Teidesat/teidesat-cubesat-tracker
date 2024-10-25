@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-File with the implementation of the camera class.
+File with the implementation of the InputStream class.
 """
 
 from os import getenv as os__get_env_var
@@ -17,6 +17,7 @@ from constants import (
     PATH_INPUT_VIDEO,
     VIDEO_FPS,  # ToDo: Try to get from input source
 )
+from src.image_frame import ImageFrame
 
 
 class InputStream:
@@ -47,6 +48,8 @@ class InputStream:
             sys__exit("\nError: Invalid source type.")
 
     def __init__zwo_asi_camera__(self):
+        """Method to initialize the ZWO ASI camera."""
+
         zwo_asi_lib = os__get_env_var("ZWO_ASI_LIB")
         zwoasi.init(zwo_asi_lib)
 
@@ -70,7 +73,6 @@ class InputStream:
         # Get frame dimensions and calculate its center
         self.frame_width = self.zwo_camera_info["MaxWidth"]
         self.frame_height = self.zwo_camera_info["MaxHeight"]
-        self.frame_center = (self.frame_width / 2, self.frame_height / 2)
 
         # Use minimum USB bandwidth permitted
         self._input_stream.set_control_value(
@@ -97,10 +99,12 @@ class InputStream:
         # Set the timeout, units are ms
         timeout = (
             self._input_stream.get_control_value(zwoasi.ASI_EXPOSURE)[0] / 1000
-        ) * 2 + 500  # ToDo: Decript this values and adjust them for better FPS
+        ) * 2 + 500  # ToDo: Decrypt this values and adjust them for better FPS
         self._input_stream.default_timeout = timeout
 
     def __init__opencv_video_capture__(self, ocv_video_source):
+        """Method to initialize the OpenCV video capture."""
+
         self._input_stream = cv.VideoCapture(ocv_video_source)
 
         if not self._input_stream.isOpened():
@@ -114,23 +118,40 @@ class InputStream:
 
         self.frame_width = int(self._input_stream.get(cv.CAP_PROP_FRAME_WIDTH))
         self.frame_height = int(self._input_stream.get(cv.CAP_PROP_FRAME_HEIGHT))
-        self.frame_center = (self.frame_width / 2, self.frame_height / 2)
 
     def get_next_frame(self):
+        """Method to get the next frame from the input stream."""
+
         if self.source_type == "ZWOASI":
             try:
-                return self._input_stream.capture_video_frame()
+                return ImageFrame(
+                    self._input_stream.capture_video_frame(),
+                    self.frame_width,
+                    self.frame_height,
+                    self.is_color_camera,
+                )
             except zwoasi.ZWO_IOError:
                 return None
 
         elif self.source_type == "WEBCAM" or self.source_type == "VIDEO_FILE":
             success, next_frame = self._input_stream.read()
-            return next_frame if success else None
+            return (
+                ImageFrame(
+                    next_frame,
+                    self.frame_width,
+                    self.frame_height,
+                    self.is_color_camera,
+                )
+                if success
+                else None
+            )
 
         else:
             sys__exit("\nError: Invalid source type.")
 
     def release(self):
+        """Method to release the resources of the input stream."""
+
         if self.source_type == "ZWOASI":
             self._input_stream.stop_video_capture()
             self._input_stream.close()

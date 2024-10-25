@@ -1,8 +1,7 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-This program tests the correct functionality of the functions at src/image_processor.py
- file.
+This program tests the correct functionality of the functions at src/star.py file.
 """
 
 import random

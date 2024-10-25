@@ -13,6 +13,7 @@ from unittest.mock import Mock, MagicMock
 
 import cv2 as cv
 
+from src.image_frame import ImageFrame
 from src.image_processor import (
     detect_stars,
     _prune_close_points,
@@ -24,7 +25,7 @@ from src.star import Star
 
 
 class ImageProcessorTestCase(unittest.TestCase):
-    """Class to test the image_processor script."""
+    """Class to test the image_processor script's functions."""
 
     @classmethod
     def setUpClass(cls):
@@ -33,7 +34,7 @@ class ImageProcessorTestCase(unittest.TestCase):
     def test_detect_stars_1(self):
         """detect_stars can detect one star."""
 
-        image = cv.imread(str(Path("./data/images/stellarium-007.png")))
+        image = ImageFrame(cv.imread(str(Path("./data/images/stellarium-007.png"))))
 
         if image is None:
             sys.exit("Could not read the image.")
@@ -46,7 +47,7 @@ class ImageProcessorTestCase(unittest.TestCase):
     def test_detect_stars_2(self):
         """detect_stars can detect multiple stars."""
 
-        image = cv.imread(str(Path("./data/images/stellarium-003.png")))
+        image = ImageFrame(cv.imread(str(Path("./data/images/stellarium-003.png"))))
 
         if image is None:
             sys.exit("Could not read the image.")

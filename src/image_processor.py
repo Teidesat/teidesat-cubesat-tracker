@@ -8,6 +8,7 @@ File with the implementation of the image processing functions, star detection a
 from math import dist
 from typing import Optional
 
+from src.image_frame import ImageFrame
 from src.star import Star
 
 from constants import (
@@ -23,14 +24,14 @@ from constants import (
 
 
 def detect_stars(
-    image,
+    image_frame: ImageFrame,
     star_detector,
     prune_close_points: bool = PRUNE_CLOSE_POINTS,
     min_prune_distance: float = MIN_PRUNE_DISTANCE,
 ) -> list[tuple[int, int]]:
     """Function to get all the bright points of a given image."""
 
-    keypoints = star_detector.detect(image, None)
+    keypoints = star_detector.detect(image_frame.data, None)
     points = [keypoint.pt for keypoint in keypoints]
 
     return (
