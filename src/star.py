@@ -361,59 +361,59 @@ def get_average_vector(
 
     num_of_vectors = len(vectors)
 
-    if num_of_vectors != 0:
-        zipped_points = list(zip(*vectors))
+    if num_of_vectors == 0:
+        return default_vector
 
-        if computation_method == "mean":
-            # return the mean of each axis
+    zipped_points = list(zip(*vectors))
+
+    if computation_method == "mean":
+        # return the mean of each axis
+        return (
+            sum(zipped_points[0]) / num_of_vectors,
+            sum(zipped_points[1]) / num_of_vectors,
+        )
+
+    elif computation_method == "median":
+        # return the median of each axis
+        center_index = num_of_vectors // 2
+        sorted_zipped_points = [
+            sorted(zipped_points[0]),
+            sorted(zipped_points[1]),
+        ]
+
+        if num_of_vectors % 2 == 0:
             return (
-                sum(zipped_points[0]) / num_of_vectors,
-                sum(zipped_points[1]) / num_of_vectors,
-            )
-
-        elif computation_method == "median":
-            # return the median of each axis
-            center_index = num_of_vectors // 2
-            sorted_zipped_points = [
-                sorted(zipped_points[0]),
-                sorted(zipped_points[1]),
-            ]
-
-            if num_of_vectors % 2 == 0:
-                return (
+                (
                     (
-                        (
-                            (sorted_zipped_points[0][center_index - 1])
-                            + (sorted_zipped_points[0][center_index])
-                        )
-                        / 2
-                    ),
+                        (sorted_zipped_points[0][center_index - 1])
+                        + (sorted_zipped_points[0][center_index])
+                    )
+                    / 2
+                ),
+                (
                     (
-                        (
-                            (sorted_zipped_points[1][center_index - 1])
-                            + (sorted_zipped_points[1][center_index])
-                        )
-                        / 2
-                    ),
-                )
-
-            else:
-                return (
-                    sorted_zipped_points[0][center_index],
-                    sorted_zipped_points[1][center_index],
-                )
-
-        elif computation_method == "mode":
-            # return the mode of each axis
-            return (
-                max(set(zipped_points[0]), key=zipped_points[0].count),
-                max(set(zipped_points[1]), key=zipped_points[1].count),
+                        (sorted_zipped_points[1][center_index - 1])
+                        + (sorted_zipped_points[1][center_index])
+                    )
+                    / 2
+                ),
             )
 
         else:
-            raise ValueError(
-                "Error: Invalid computation method, "
-                + "the available values are: 'mean', 'median' and 'mode'"
+            return (
+                sorted_zipped_points[0][center_index],
+                sorted_zipped_points[1][center_index],
             )
 
-    return default_vector
+    elif computation_method == "mode":
+        # return the mode of each axis
+        return (
+            max(set(zipped_points[0]), key=zipped_points[0].count),
+            max(set(zipped_points[1]), key=zipped_points[1].count),
+        )
+
+    else:
+        raise ValueError(
+            "Error: Invalid computation method, "
+            + "the available values are: 'mean', 'median' and 'mode'"
+        )
