@@ -62,7 +62,15 @@ MARK_LAST_PREDICTED_POSITION = True
 COLORIZED_TRACKED_STARS = False
 
 # Default color of the circle to draw around each star.
-MARK_POSITION_COLOR = (0, 0, 100)
+MARK_POSITION_DEFAULT_COLOR = (0, 0, 100)
+# Color of the circle to draw around the shooting stars.
+MARK_SHOOTING_STAR_COLOR = (0, 200, 200)
+# Color of the circle to draw around the detected satellite.
+MARK_SATELLITE_COLOR = (0, 200, 0)
+# Color of the circle to draw around the next expected position of a moving object.
+MARK_NEXT_EXPECTED_POSITION_COLOR = (200, 200, 0)
+# Color of the circle to draw around the last predicted position of a moving object.
+MARK_LAST_PREDICTED_POSITION_COLOR = (200, 0, 200)
 # Default color of the line to draw the movement vector of each star.
 MARK_MOVEMENT_VECTOR_COLOR = (200, 200, 0)
 # Radius of the circle to draw around each star.

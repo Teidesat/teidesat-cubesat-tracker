@@ -41,6 +41,7 @@ from src.image_processor import (
 )
 from src.input_stream import InputStream
 from src.star import Star
+
 from constants import (
     SHOW_VIDEO_RESULT,
     SIMULATE_TRACKING,

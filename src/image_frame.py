@@ -21,7 +21,11 @@ from constants import (
     MARK_NEXT_EXPECTED_POSITION,
     MARK_LAST_PREDICTED_POSITION,
     COLORIZED_TRACKED_STARS,
-    MARK_POSITION_COLOR,
+    MARK_POSITION_DEFAULT_COLOR,
+    MARK_SHOOTING_STAR_COLOR,
+    MARK_SATELLITE_COLOR,
+    MARK_NEXT_EXPECTED_POSITION_COLOR,
+    MARK_LAST_PREDICTED_POSITION_COLOR,
     MARK_MOVEMENT_VECTOR_COLOR,
     MARK_RADIUS,
     MARK_THICKNESS,
@@ -83,7 +87,7 @@ class ImageFrame:
     def mark_position(
         self,
         target: tuple[int, int],
-        color: tuple = MARK_POSITION_COLOR,
+        color: tuple = MARK_POSITION_DEFAULT_COLOR,
         radius: int = MARK_RADIUS,
         thickness: int = MARK_THICKNESS,
     ):
@@ -138,59 +142,95 @@ class ImageFrame:
         mark_satellite: bool = MARK_SATELLITE,
         mark_movement_vector: bool = MARK_MOVEMENT_VECTOR,
         mark_next_expected_position: bool = MARK_NEXT_EXPECTED_POSITION,
-        mark_last_position_prediction: bool = MARK_LAST_PREDICTED_POSITION,
+        mark_last_predicted_position: bool = MARK_LAST_PREDICTED_POSITION,
         colorized_tracked_stars: bool = COLORIZED_TRACKED_STARS,
+        mark_position_default_color: tuple = MARK_POSITION_DEFAULT_COLOR,
+        mark_shooting_star_color: tuple = MARK_SHOOTING_STAR_COLOR,
+        mark_satellite_color: tuple = MARK_SATELLITE_COLOR,
+        mark_next_expected_position_color: tuple = MARK_NEXT_EXPECTED_POSITION_COLOR,
+        mark_last_predicted_position_color: tuple = MARK_LAST_PREDICTED_POSITION_COLOR,
+        mark_radius: int = MARK_RADIUS,
+        mark_thickness: int = MARK_THICKNESS,
     ):
         """Method to mark information about the detected elements in the frame data."""
 
         if mark_new_stars and new_star_positions is not None:
             for star in new_star_positions:
-                self.mark_position(star)
+                self.mark_position(
+                    star,
+                    color=mark_position_default_color,
+                    radius=mark_radius,
+                    thickness=mark_thickness,
+                )
 
         if mark_tracked_stars and tracked_stars is not None:
             for star in tracked_stars:
                 if colorized_tracked_stars and isinstance(star, Star):
-                    self.mark_position(star.last_detected_position, color=star.color)
+                    self.mark_position(
+                        star.last_detected_position,
+                        color=star.color,
+                        radius=mark_radius,
+                        thickness=mark_thickness,
+                    )
                 else:
-                    self.mark_position(star.last_detected_position)
+                    self.mark_position(
+                        star.last_detected_position,
+                        color=mark_position_default_color,
+                        radius=mark_radius,
+                        thickness=mark_thickness,
+                    )
 
         if mark_shooting_stars and shooting_stars is not None:
             for star in shooting_stars:
                 if mark_movement_vector:
                     self.mark_path(star)
 
-                self.mark_position(star.last_detected_position, color=(0, 200, 200))
+                self.mark_position(
+                    star.last_detected_position,
+                    color=mark_shooting_star_color,
+                    radius=mark_radius,
+                    thickness=mark_thickness,
+                )
 
                 if mark_next_expected_position:
                     self.mark_position(
                         star.next_expected_position,
-                        color=(200, 200, 0),
-                        thickness=1,
+                        color=mark_next_expected_position_color,
+                        radius=mark_radius,
+                        thickness=mark_thickness,
                     )
-                if mark_last_position_prediction:
+                if mark_last_predicted_position:
                     self.mark_position(
                         star.last_predicted_position,
-                        color=(200, 0, 200),
-                        thickness=1,
+                        color=mark_last_predicted_position_color,
+                        radius=mark_radius,
+                        thickness=mark_thickness,
                     )
 
         if mark_satellite and satellite is not None:
             if mark_movement_vector:
                 self.mark_path(satellite)
 
-            self.mark_position(satellite.last_detected_position, color=(0, 200, 0))
+            self.mark_position(
+                satellite.last_detected_position,
+                color=mark_satellite_color,
+                radius=mark_radius,
+                thickness=mark_thickness,
+            )
 
             if mark_next_expected_position:
                 self.mark_position(
                     satellite.next_expected_position,
-                    color=(200, 200, 0),
-                    thickness=1,
+                    color=mark_next_expected_position_color,
+                    radius=mark_radius,
+                    thickness=mark_thickness,
                 )
-            if mark_last_position_prediction:
+            if mark_last_predicted_position:
                 self.mark_position(
                     satellite.last_predicted_position,
-                    color=(200, 0, 200),
-                    thickness=1,
+                    color=mark_last_predicted_position_color,
+                    radius=mark_radius,
+                    thickness=mark_thickness,
                 )
 
     def tracking_phase_video_simulation(self, satellite: Star):
