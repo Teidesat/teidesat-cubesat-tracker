@@ -1,5 +1,4 @@
-FROM ubuntu:jammy
-
+FROM nvidia/cuda:12.6.3-cudnn-devel-ubuntu22.04
 
 # Install system dependencies
 

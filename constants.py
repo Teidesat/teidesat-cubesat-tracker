@@ -111,6 +111,14 @@ PATH_OUTPUT_SAT_LOG = Path(
 # Star settings #
 #################
 
+# Type of the star detection mode to use, the supported types are:
+#   - "OPEN_CV" for the OpenCV star detector.
+#   - "NEURAL_NETWORK" for the neural network star detector.
+STAR_DETECTION_MODE = "NEURAL_NETWORK"
+
+# Path to the neural network model to use as the star detector.
+NEURAL_NETWORK_MODEL_PATH = Path("/app/trained-models/model-2024_12_10-16_49_43.keras")
+
 # Minimum brightness to be considered a star.
 STAR_DETECTOR_THRESHOLD = 50
 

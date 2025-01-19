@@ -34,6 +34,7 @@ from time import perf_counter as time__perf_counter
 import cv2 as cv
 
 from src.image_processor import (
+    load_star_detector,
     detect_stars,
     track_stars,
     detect_blinking_star,
@@ -51,7 +52,9 @@ from constants import (
     PATH_OUTPUT_PROCESSED_VIDEO,
     OUTPUT_SAT_LOG_TO_FILE,
     PATH_OUTPUT_SAT_LOG,
+    STAR_DETECTION_MODE,
     STAR_DETECTOR_THRESHOLD,
+    NEURAL_NETWORK_MODEL_PATH,
     PRUNE_CLOSE_POINTS,
     MIN_PRUNE_DISTANCE,
     SAT_DESIRED_BLINKING_FREQ,
@@ -67,7 +70,9 @@ def main():
 
 def satellite_detection_test(
     sat_desired_blinking_freq: float = SAT_DESIRED_BLINKING_FREQ,
+    star_detection_mode: str = STAR_DETECTION_MODE,
     star_detector_threshold: int = STAR_DETECTOR_THRESHOLD,
+    neural_network_model_path: str = str(NEURAL_NETWORK_MODEL_PATH),
     prune_close_points: bool = PRUNE_CLOSE_POINTS,
     min_prune_distance: float = MIN_PRUNE_DISTANCE,
     movement_threshold: float = MOVEMENT_THRESHOLD,
@@ -86,7 +91,11 @@ def satellite_detection_test(
     input_stream = InputStream()
 
     # Create the star detector object
-    star_detector = cv.FastFeatureDetector_create(threshold=star_detector_threshold)
+    star_detector = load_star_detector(
+        star_detection_mode,
+        star_detector_threshold,
+        neural_network_model_path,
+    )
 
     # Initialize the variables to store the information about the tracked stars and the
     #  detected satellite through the video frames
@@ -142,6 +151,7 @@ def satellite_detection_test(
         new_star_positions = detect_stars(
             grayscale_frame,
             star_detector,
+            star_detection_mode,
             prune_close_points,
             min_prune_distance,
         )

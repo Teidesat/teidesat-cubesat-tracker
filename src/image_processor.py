@@ -8,11 +8,19 @@ File with the implementation of the image processing functions, star detection a
 from math import dist
 from typing import Optional
 
+import cv2 as cv
+import numpy as np
+import tensorflow as tf
+from tensorflow import keras
+
 from src.image_frame import ImageFrame
 from src.star import Star
 
 from constants import (
     VIDEO_FPS,
+    STAR_DETECTION_MODE,
+    STAR_DETECTOR_THRESHOLD,
+    NEURAL_NETWORK_MODEL_PATH,
     PRUNE_CLOSE_POINTS,
     MIN_PRUNE_DISTANCE,
     DEFAULT_LEFT_LIFETIME,
@@ -23,16 +31,99 @@ from constants import (
 )
 
 
+def load_star_detector(
+    star_detection_mode: str = STAR_DETECTION_MODE,
+    star_detector_threshold: int = STAR_DETECTOR_THRESHOLD,
+    neural_network_model_path: str = NEURAL_NETWORK_MODEL_PATH,
+):
+
+    if star_detection_mode == "OPEN_CV":
+        star_detector = cv.FastFeatureDetector_create(threshold=star_detector_threshold)
+
+    elif star_detection_mode == "NEURAL_NETWORK":
+        star_detector = keras.models.load_model(neural_network_model_path)
+
+    else:
+        raise ValueError(f"Invalid star detector mode: {star_detection_mode}")
+
+    return star_detector
+
+
+def detect_sky_objects(input_image, model, input_tensor_shape=(256, 256)):
+    """Function to apply the model inference over the given image."""
+
+    # Adapt the input image to the model input shape and format
+    resized_image = cv.resize(input_image, dsize=input_tensor_shape)
+    input_tensor = tf.convert_to_tensor([resized_image])
+
+    # Apply the model to the input image
+    predicted_mask = model.predict(input_tensor)[0]
+
+    # Reverse the one-hot encoding to create a single segmentation mask
+    segmentation_mask = np.argmax(predicted_mask, axis=-1)
+
+    # Resize the mask to the original image size
+    result_mask = cv.resize(
+        segmentation_mask.astype(np.uint8),
+        dsize=(input_image.shape[1], input_image.shape[0]),
+    )
+
+    return result_mask
+
+
+def get_sky_objects_positions(segmentation_mask):
+    """
+    Function to get the central positions of the detected objects at the given
+    segmentation mask.
+    """
+
+    # Get the contours of each detected region
+    contours, _ = cv.findContours(
+        segmentation_mask,
+        cv.RETR_LIST,
+        cv.CHAIN_APPROX_SIMPLE,
+    )
+
+    min_detected_object_size = 10
+    sky_objects_positions = []
+    for contour in contours:
+        if cv.contourArea(contour) < min_detected_object_size:
+            continue
+
+        # Get the bounding box of each contour
+        corner_x_coord, corner_y_coord, width, height = cv.boundingRect(contour)
+
+        # Get the center of the bounding box
+        center_x_coord = corner_x_coord + width / 2
+        center_y_coord = corner_y_coord + height / 2
+
+        # Add the center coordinates to the list of detected objects positions
+        sky_objects_positions.append((center_x_coord, center_y_coord))
+
+    return sky_objects_positions
+
+
 def detect_stars(
     image_frame: ImageFrame,
     star_detector,
+    star_detection_mode: str = STAR_DETECTION_MODE,
     prune_close_points: bool = PRUNE_CLOSE_POINTS,
     min_prune_distance: float = MIN_PRUNE_DISTANCE,
 ) -> list[tuple[int, int]]:
     """Function to get all the bright points of a given image."""
 
-    keypoints = star_detector.detect(image_frame.data, None)
-    points = [keypoint.pt for keypoint in keypoints]
+    if star_detection_mode == "OPEN_CV":
+        keypoints = star_detector.detect(image_frame.data, None)
+        points = [keypoint.pt for keypoint in keypoints]
+
+    elif star_detection_mode == "NEURAL_NETWORK":
+        inference_result_mask = detect_sky_objects(
+            image_frame.data, star_detector
+        ).astype(np.uint8)
+        points = get_sky_objects_positions(inference_result_mask)
+
+    else:
+        raise ValueError(f"Invalid star detector mode: {star_detection_mode}")
 
     return (
         _prune_close_points(points, min_prune_distance)

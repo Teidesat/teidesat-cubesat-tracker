@@ -6,6 +6,9 @@ services:
       dockerfile: Dockerfile
     container_name: teidesat-cubesat-tracker
     network_mode: host
+    runtime: nvidia
+    env_file:
+      - .env
     environment:
       - DISPLAY=${DISPLAY}
     volumes:
@@ -13,7 +16,15 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix:ro
       - $HOME/.Xauthority:/root/.Xauthority:ro
       - .:/app
+      - ${TRAINED_MODELS_PATH}:/app/trained-models
     device_cgroup_rules:
       - c 189:* rmw
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     working_dir: /app
     command: "python3 main.py"

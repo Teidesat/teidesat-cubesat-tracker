@@ -58,3 +58,30 @@ This program is used to track the satellite using an Optical Ground Station (OGS
    ```
    $ coverage run --branch --omit=config*,*init*,test* -m unittest && echo '' && coverage report -m && coverage erase
    ```
+
+### Stars detection with the neural network model:
+
+The neural network model used to detect stars in the video stream is a pre-trained model based on image segmentation. More information on the training process and the model architecture can be found at its dedicated GitHub repository: https://github.com/Teidesat/intelligent-sky-objects-detector
+
+To use this detection mode, follow these steps:
+
+   1. Download the trained neural network model from the following link:
+      ```
+      https://drive.google.com/drive/folders/1kO81C8dctVbbpROEhiE7BLP7iTWPYEi1?usp=sharing
+      ```
+
+   2. Create a folder named 'trained-models' and move the downloaded model to it:
+      ```
+      $ mkdir /path/to/trained-models
+      $ mv path/to/downloaded/model /path/to/trained-models/
+      ```
+      
+   3. Create a '.env' file with the following content:
+      ```
+      TRAINED_MODELS_PATH=/path/to/trained-models
+      ```
+
+   4. Verify that the detection mode is set to 'NEURAL_NETWORK' in the 'constants.py' file:
+      ```
+      STAR_DETECTION_MODE = "NEURAL_NETWORK"
+      ```
